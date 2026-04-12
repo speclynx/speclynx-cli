@@ -1,0 +1,26 @@
+{
+  "branches": [
+    {"name": "main"}
+  ],
+  "tagFormat": "v${version}",
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    ["@semantic-release/npm", {
+       "npmPublish": false,
+       "tarballDir": "dist"
+    }],
+    ["@semantic-release/github", {
+      "assets": [
+        { "path": "dist/*.tgz" }
+      ]
+    }],
+    ["@semantic-release/git", {
+      "assets": [
+        "package.json",
+        "package-lock.json"
+      ],
+      "message": "chore(release): cut the ${nextRelease.version} release\n\n${nextRelease.notes}"
+    }]
+  ]
+}

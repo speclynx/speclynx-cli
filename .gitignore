@@ -1,0 +1,11 @@
+node_modules/
+.idea/
+*.iml
+.vscode/settings.json
+isolate-*.log
+.log*
+.claude/
+src/**/*.mjs
+src/**/*.cjs
+test/**/*.mjs
+/dist

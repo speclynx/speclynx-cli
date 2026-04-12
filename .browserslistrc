@@ -1,0 +1,5 @@
+[production]
+node 16.14
+
+[development]
+node 24.10.0
