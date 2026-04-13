@@ -114,4 +114,6 @@ Overlay: overlay.json -> openapi.json
 
 ## License
 
-[Apache License 2.0](https://github.com/speclynx/speclynx-cli/blob/main/LICENSE)
+SpecLynx CLI is licensed under [Apache 2.0 license](https://github.com/speclynx/speclynx-cli/blob/main/LICENSE).
+SpecLynx CLI comes with an explicit [NOTICE](https://github.com/speclynx/speclynx-cli/blob/main/NOTICE) file
+containing additional legal notices and information.
