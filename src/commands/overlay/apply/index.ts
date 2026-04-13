@@ -1,4 +1,4 @@
-import { Command } from 'commander';
+import { Command, Option } from 'commander';
 
 import action from './action.ts';
 
@@ -15,9 +15,11 @@ command
     [] as string[],
   )
   .option('-o, --output <file>', 'write result to file instead of stdout')
-  .option(
-    '-f, --format <format>',
-    'output format: json or yaml (auto-detected from target extension)',
+  .addOption(
+    new Option(
+      '-f, --format <format>',
+      'output format (auto-detected from target extension)',
+    ).choices(['json', 'yaml']),
   )
   .option('--strict', 'fail if any action target matches zero nodes')
   .option('--verbose', 'print trace information about overlay application')

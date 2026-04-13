@@ -1,6 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import { toJSON, toYAML } from '@speclynx/apidom-core';
+import { toJSON, toYAML, toValue } from '@speclynx/apidom-core';
 import { parse } from '@speclynx/apidom-reference';
 import {
   applyOverlay,
@@ -67,7 +67,9 @@ const action = async (
     const resultElement = parseResult.result!;
 
     // determine output format from target extension or explicit flag
-    const format = opts.format ?? (targetPath?.match(/\.ya?ml$/i) ? 'yaml' : 'json');
+    const resolvedTargetURI: string | undefined =
+      targetPath ?? (toValue(parseResult.meta.get('retrievalURI')) as string | undefined);
+    const format = opts.format ?? (resolvedTargetURI?.match(/\.ya?ml$/i) ? 'yaml' : 'json');
 
     let output: string;
     if (format === 'yaml') {

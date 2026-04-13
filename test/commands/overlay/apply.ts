@@ -75,6 +75,13 @@ describe('speclynx overlay apply', function () {
       const result = JSON.parse(stdout);
       expect(result.info.description).to.equal('Added via extends');
     });
+
+    it('should auto-detect YAML format when extends resolves to YAML target', async function () {
+      const { stdout } = await run([path.join(fixtures, 'overlay-extends.yaml')]);
+      expect(stdout.trimStart()).to.not.match(/^\{/);
+      expect(stdout).to.include('openapi:');
+      expect(stdout).to.include('description: Added via extends');
+    });
   });
 
   describe('--format option', function () {
@@ -97,6 +104,17 @@ describe('speclynx overlay apply', function () {
       ]);
       expect(stdout.trimStart()).to.not.match(/^\{/);
       expect(stdout).to.include('openapi:');
+    });
+
+    it('should reject invalid format values', async function () {
+      const { stderr, code } = await runExpectFailure([
+        path.join(fixtures, 'overlay.json'),
+        path.join(fixtures, 'openapi.json'),
+        '-f',
+        'xml',
+      ]);
+      expect(code).to.not.equal(0);
+      expect(stderr).to.include('Allowed choices are json, yaml');
     });
   });
 
