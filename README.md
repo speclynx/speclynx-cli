@@ -1,5 +1,15 @@
 # @speclynx/cli
 
+[![Build Status](https://github.com/speclynx/speclynx-cli/actions/workflows/build.yml/badge.svg)](https://github.com/speclynx/speclynx-cli/actions)
+[![npmversion](https://badge.fury.io/js/@speclynx%2Fcli.svg)](https://www.npmjs.com/package/@speclynx/cli)
+[![Dependabot enabled](https://badgen.net/badge/icon/dependabot?icon=dependabot&label)](https://docs.github.com/en/code-security/supply-chain-security/keeping-your-dependencies-updated-automatically)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-3.0-40c463.svg)](https://github.com/speclynx/speclynx-cli/blob/HEAD/CODE_OF_CONDUCT.md)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/speclynx/speclynx-cli/blob/HEAD/LICENSE)
+
+<div align="center">
+    <a href="https://speclynx.com"><img width="636" height="407" alt="image" src="https://github.com/user-attachments/assets/1cfd6c8e-0206-4d53-9a2c-e4d10be84ca0" /></a>
+</div>
+
 Messy API specs? Bring order from the command line — **overlay**, **dereference**, **bundle**, **convert**, and **validate**.
 
 > **Note:** Currently only the `overlay` command is implemented. More commands are coming soon.
