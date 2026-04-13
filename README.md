@@ -14,6 +14,12 @@ Messy API specs? Bring order from the command line — **overlay**, **dereferenc
 
 > **Note:** Currently only the `overlay` command is implemented. More commands are coming soon.
 
+<div align="center">
+    <b><a href="https://speclynx.com/cli">Documentation</a></b> | <b><a href="https://www.npmjs.com/package/@speclynx/cli">npm</a></b> | <b><a href="https://github.com/speclynx/speclynx-cli/issues">Issues</a></b>
+</div>
+
+<br />
+
 `@speclynx/cli` is part of the [SpecLynx](https://speclynx.com/) ecosystem, built on top of [ApiDOM](https://github.com/speclynx/apidom) and [ApiDOM Language Service](https://github.com/speclynx/apidom-lsp).
 
 ## Installation
