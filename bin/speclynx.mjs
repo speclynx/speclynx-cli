@@ -1,3 +1,5 @@
 #!/usr/bin/env node
 
-import '../src/cli.mjs';
+import { program } from '../src/cli.mjs';
+
+program.parse();
