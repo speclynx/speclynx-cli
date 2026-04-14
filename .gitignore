@@ -9,3 +9,4 @@ src/**/*.mjs
 src/**/*.cjs
 test/**/*.mjs
 /dist
+/speclynx-cli-*.tgz

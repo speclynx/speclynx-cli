@@ -48,7 +48,6 @@
   "files": [
     "bin/",
     "src/**/*.mjs",
-    "src/**/*.cjs",
     "LICENSE",
     "NOTICE",
     "package.json",
@@ -59,7 +58,7 @@
     "type": "git",
     "url": "git+https://github.com/speclynx/speclynx-cli.git"
   },
-  "author": "SpecLynx",
+  "author": "SpecLynx <info@speclynx.com>",
   "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/speclynx/speclynx-cli/issues"
