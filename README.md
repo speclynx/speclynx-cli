@@ -40,6 +40,7 @@ npx @speclynx/cli overlay apply overlay.json openapi.json
 speclynx --help                  # list all commands
 speclynx overlay --help          # list overlay subcommands
 speclynx overlay apply --help    # show overlay apply options
+speclynx overlay diff --help     # show overlay diff options
 ```
 
 ## Commands
@@ -126,6 +127,57 @@ Overlay: overlay.json -> openapi.json
   Overlay was successfully applied
 
 { ... }
+```
+
+---
+
+### `overlay diff`
+
+Generate an [Overlay 1.x](https://spec.openapis.org/overlay/v1.1.0.html) document from the diff of two API documents. The produced overlay, when applied to `<before>`, yields `<after>`.
+
+```
+speclynx overlay diff [options] <before> <after>
+```
+
+**Arguments:**
+
+| Argument | Description |
+|----------|-------------|
+| `<before>` | Path to the "before" API document (JSON or YAML) |
+| `<after>` | Path to the "after" API document (JSON or YAML) |
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `-o, --output <file>` | Write result to file instead of stdout |
+| `-f, --format <format>` | Output format: `json` or `yaml` (auto-detected from `<before>` extension) |
+| `--fail-on-empty` | Exit with code 1 if the documents are identical |
+
+#### Examples
+
+Generate an overlay from two OpenAPI documents:
+
+```sh
+speclynx overlay diff openapi-v1.json openapi-v2.json
+```
+
+Write the generated overlay to a file:
+
+```sh
+speclynx overlay diff openapi-v1.yaml openapi-v2.yaml -o migration.yaml
+```
+
+Force JSON output regardless of input format:
+
+```sh
+speclynx overlay diff openapi-v1.yaml openapi-v2.yaml -f json
+```
+
+Fail when the two documents are identical (useful in CI):
+
+```sh
+speclynx overlay diff openapi-v1.json openapi-v2.json --fail-on-empty
 ```
 
 ## License

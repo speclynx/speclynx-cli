@@ -18,4 +18,11 @@ describe('speclynx CLI', function () {
     const apply = overlay!.commands.find((cmd) => cmd.name() === 'apply');
     expect(apply).to.not.be.undefined;
   });
+
+  it('should have overlay diff subcommand', function () {
+    const overlay = program.commands.find((cmd) => cmd.name() === 'overlay');
+    expect(overlay, 'overlay command should exist').to.not.be.undefined;
+    const diff = overlay!.commands.find((cmd) => cmd.name() === 'diff');
+    expect(diff).to.not.be.undefined;
+  });
 });
