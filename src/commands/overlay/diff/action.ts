@@ -17,7 +17,12 @@ const action = async (
   try {
     const overlay = await diffOverlay(path.resolve(beforePath), path.resolve(afterPath));
 
-    if (opts.failOnEmpty && (toValue(overlay) as { actions: unknown[] }).actions.length === 0) {
+    const overlayValue = toValue(overlay) as Record<string, unknown>;
+    if (
+      opts.failOnEmpty &&
+      Array.isArray(overlayValue.actions) &&
+      overlayValue.actions.length === 0
+    ) {
       process.stderr.write(`Error: documents are identical — no overlay actions were generated\n`);
       process.exit(1);
     }

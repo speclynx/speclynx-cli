@@ -47,6 +47,26 @@ describe('speclynx overlay diff', function () {
       ]);
       expect(() => JSON.parse(stdout)).to.not.throw();
     });
+
+    it('should generate actions reflecting the diff between documents', async function () {
+      const { stdout } = await run([
+        path.join(fixtures, 'openapi.json'),
+        path.join(fixtures, 'openapi-after.json'),
+      ]);
+      const result = JSON.parse(stdout) as {
+        actions: Array<{ target: string; update: unknown }>;
+      };
+      const versionAction = result.actions.find((a) => a.target === "$['info']['version']");
+      expect(versionAction, "action targeting $['info']['version'] should exist").to.not.be
+        .undefined;
+      expect(versionAction!.update).to.equal('2.0.0');
+
+      const infoAction = result.actions.find((a) => a.target === "$['info']");
+      expect(infoAction, "action targeting $['info'] should exist").to.not.be.undefined;
+      expect((infoAction!.update as { description: string }).description).to.equal(
+        'Updated API description',
+      );
+    });
   });
 
   describe('YAML input', function () {
