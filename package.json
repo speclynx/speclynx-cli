@@ -69,7 +69,7 @@
     "@speclynx/apidom-core": "^4.10.1",
     "@speclynx/apidom-overlay": "^4.10.1",
     "@speclynx/apidom-reference": "^4.10.1",
-    "commander": "^14.0.3"
+    "commander": "^15.0.0"
   },
   "devDependencies": {
     "@babel/cli": "=7.29.7",
