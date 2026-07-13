@@ -25,4 +25,9 @@ describe('speclynx CLI', function () {
     const diff = overlay!.commands.find((cmd) => cmd.name() === 'diff');
     expect(diff).to.not.be.undefined;
   });
+
+  it('should have validate subcommand', function () {
+    const validate = program.commands.find((cmd) => cmd.name() === 'validate');
+    expect(validate).to.not.be.undefined;
+  });
 });

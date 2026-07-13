@@ -12,7 +12,7 @@
 
 Messy API specs? Bring order from the command line — **overlay**, **dereference**, **bundle**, **convert**, and **validate**.
 
-> **Note:** Currently only the `overlay` command is implemented. More commands are coming soon.
+> **Note:** Currently the `overlay` and `validate` commands are implemented. More commands are coming soon.
 
 <div align="center">
     <b><a href="https://speclynx.com/cli">Documentation</a></b> | <b><a href="https://www.npmjs.com/package/@speclynx/cli">npm</a></b> | <b><a href="https://github.com/speclynx/speclynx-cli/issues">Issues</a></b>
@@ -41,6 +41,7 @@ speclynx --help                  # list all commands
 speclynx overlay --help          # list overlay subcommands
 speclynx overlay apply --help    # show overlay apply options
 speclynx overlay diff --help     # show overlay diff options
+speclynx validate --help         # show validate options
 ```
 
 ## Commands
@@ -178,6 +179,83 @@ Fail when the two documents are identical (useful in CI):
 
 ```sh
 speclynx overlay diff openapi-v1.json openapi-v2.json --fail-on-empty
+```
+
+---
+
+### `validate`
+
+Validate and lint an API definition, powered by the [ApiDOM Language Service](https://www.npmjs.com/package/@speclynx/apidom-ls). The document type and version are auto-detected from its content.
+
+**Supported specifications:**
+
+- OpenAPI 2.0 (Swagger), 3.0.x, 3.1.x
+- AsyncAPI 2.x
+- Arazzo 1.x
+- Overlay 1.x
+
+Semantic validation, reference validation, and semantic linting run by default. JSON Schema (AJV) validation is opt-in via `--json-schema-validation` and covers OpenAPI 2/3.0/3.1, Arazzo, and Overlay (AsyncAPI is validated semantically only).
+
+```
+speclynx validate [options] <file>
+```
+
+**Arguments:**
+
+| Argument | Description |
+|----------|-------------|
+| `<file>` | Path to the API document (JSON or YAML) |
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `--json` | Output raw diagnostics as JSON to stdout |
+| `--no-semantic-validation` | Disable semantic validation |
+| `--no-reference-validation` | Disable reference validation |
+| `--no-semantic-linting` | Disable semantic linting |
+| `--json-schema-validation` | Enable JSON Schema (AJV) validation |
+| `--better-ajv-errors` | Use better AJV error messages (with `--json-schema-validation`) |
+| `--max-problems <n>` | Maximum number of problems to report |
+| `--base-uri <uri>` | Base URI used to resolve references |
+| `--reference-validation-mode <mode>` | Reference validation mode: `legacy`, `indirect`, or `indirect-external` |
+| `--related-information` | Include related information in diagnostics |
+| `--strict` | Treat warnings as failures (exit with code 1) |
+
+Diagnostics are written to stderr in a human-readable `file:line:column  severity  message  [code source]` format. The command exits with code `1` when any error-severity diagnostic is found (or any warning under `--strict`), and `0` otherwise — suitable for CI gating. With `--json`, the raw diagnostics array is written to stdout instead.
+
+> **Note:** The `code` value of reference-validation diagnostics is not stable across runs, so consumers that snapshot or diff the `--json` output should not rely on it for reference errors.
+
+#### Examples
+
+Validate an OpenAPI document:
+
+```sh
+speclynx validate openapi.json
+```
+
+Emit machine-readable diagnostics for further processing:
+
+```sh
+speclynx validate openapi.yaml --json
+```
+
+Enable JSON Schema validation with improved error messages:
+
+```sh
+speclynx validate openapi.json --json-schema-validation --better-ajv-errors
+```
+
+Treat lint warnings as failures in CI:
+
+```sh
+speclynx validate openapi.json --strict
+```
+
+Run only JSON Schema validation, skipping semantic checks and linting:
+
+```sh
+speclynx validate openapi.json --json-schema-validation --no-semantic-validation --no-semantic-linting --no-reference-validation
 ```
 
 ## License
