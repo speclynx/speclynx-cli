@@ -1,0 +1,11 @@
+openapi: "3.0.3"
+info:
+  title: My API
+  version: 1.0.0
+servers:
+  - url: "https://{host}/api"
+    variables:
+      host:
+        default: example.com
+        enum: []
+paths: {}
