@@ -33,6 +33,7 @@ const severityLabels: Record<number, string> = {
 const buildValidationContext = (
   opts: ValidateActionOptions,
   referenceValidationModes: Record<string, number>,
+  fileURI: string,
 ): ValidationContext => {
   const context: ValidationContext = {};
 
@@ -46,12 +47,17 @@ const buildValidationContext = (
   if (opts.betterAjvErrors) context.betterAjvErrors = true;
   if (opts.relatedInformation) context.relatedInformation = true;
 
-  if (typeof opts.maxProblems === 'number') context.maxNumberOfProblems = opts.maxProblems;
-  if (opts.baseUri) context.baseURI = opts.baseUri;
+  // Default the reference-resolution base to the input file so relative external
+  // $refs (e.g. ./components.yaml#/...) resolve from the file's location out of
+  // the box; an explicit --base-uri overrides it.
+  context.baseURI = opts.baseUri ?? fileURI;
   if (opts.referenceValidationMode) {
     context.referenceValidationMode = referenceValidationModes[opts.referenceValidationMode];
   }
 
+  // Note: --max-problems is NOT forwarded as maxNumberOfProblems here on purpose.
+  // The cap is applied CLI-side to the returned diagnostics (for reporting only),
+  // so the failure/exit-code decision always sees the complete diagnostic set.
   return context;
 };
 
@@ -105,9 +111,10 @@ const action = async (filePath: string, opts: ValidateActionOptions): Promise<vo
     const resolvedPath = path.resolve(filePath);
     const content = fs.readFileSync(resolvedPath, 'utf-8');
     const languageId = /\.ya?ml$/i.test(resolvedPath) ? 'yaml' : 'json';
-    const document = TextDocument.create(pathToFileURL(resolvedPath).href, languageId, 0, content);
+    const fileURI = pathToFileURL(resolvedPath).href;
+    const document = TextDocument.create(fileURI, languageId, 0, content);
 
-    const validationContext = buildValidationContext(opts, referenceValidationModes);
+    const validationContext = buildValidationContext(opts, referenceValidationModes, fileURI);
     const diagnostics = await service.doValidation(document, validationContext);
 
     // The exit code reflects ALL detected problems; --max-problems only bounds

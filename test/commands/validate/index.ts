@@ -221,6 +221,26 @@ describe('speclynx validate', function () {
     });
   });
 
+  describe('reference resolution base URI', function () {
+    it('should resolve relative external refs against the input file by default', async function () {
+      // Without a file-anchored base URI, a relative external $ref resolves over
+      // HTTP; the diagnostic must instead reference the sibling file's file:// URI.
+      const { stdout } = await runExpectFailure([
+        path.join(fixtures, 'openapi-external-ref.yaml'),
+        '--reference-validation-mode',
+        'indirect-external',
+        '--json',
+      ]);
+      const diagnostics = JSON.parse(stdout);
+      const messages = diagnostics
+        .map((diagnostic: { message?: string }) => diagnostic.message ?? '')
+        .join('\n');
+      expect(messages).to.include('openapi-external-ref-thing.yaml');
+      expect(messages).to.include('file://');
+      expect(messages).to.not.include('http');
+    });
+  });
+
   describe('error handling', function () {
     it('should fail for a non-existent file', async function () {
       const { stderr, code } = await runExpectFailure([path.join(fixtures, 'nonexistent.json')]);
