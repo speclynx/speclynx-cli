@@ -13,9 +13,7 @@ const parseMaxProblems = (value: string): number => {
 const command = new Command('validate');
 
 command
-  .description(
-    'Validate and lint an API definition (OpenAPI, AsyncAPI, Arazzo, Overlay, JSON Schema)',
-  )
+  .description('Validate and lint an API definition (OpenAPI, AsyncAPI, Arazzo, Overlay)')
   .argument('<file>', 'path to the API document (JSON or YAML)')
   .option('--json', 'output raw diagnostics as JSON to stdout')
   .option('--no-semantic-validation', 'disable semantic validation')
