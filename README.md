@@ -217,7 +217,7 @@ speclynx validate [options] <file>
 | `--json-schema-validation` | Enable JSON Schema (AJV) validation |
 | `--better-ajv-errors` | Use better AJV error messages (with `--json-schema-validation`) |
 | `--max-problems <n>` | Maximum number of problems to report |
-| `--base-uri <uri>` | Base URI used to resolve references |
+| `--base-uri <uri>` | Base URI used to resolve references (defaults to the input file's location) |
 | `--reference-validation-mode <mode>` | Reference validation mode: `legacy`, `indirect`, or `indirect-external` |
 | `--related-information` | Include related information in diagnostics |
 | `--strict` | Treat warnings as failures (exit with code 1) |

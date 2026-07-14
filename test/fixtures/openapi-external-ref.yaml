@@ -1,0 +1,9 @@
+openapi: "3.1.0"
+info:
+  title: External Ref Test
+  version: 1.0.0
+components:
+  schemas:
+    Thing:
+      $ref: "./openapi-external-ref-thing.yaml"
+paths: {}
