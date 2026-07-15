@@ -66,10 +66,10 @@
   "homepage": "https://github.com/speclynx/speclynx-cli#readme",
   "dependencies": {
     "@babel/runtime-corejs3": "^7.28.4",
-    "@speclynx/apidom-core": "^4.10.1",
+    "@speclynx/apidom-core": "^5.0.1",
     "@speclynx/apidom-ls": "^2.11.5",
-    "@speclynx/apidom-overlay": "^4.10.1",
-    "@speclynx/apidom-reference": "^4.10.1",
+    "@speclynx/apidom-overlay": "^5.0.1",
+    "@speclynx/apidom-reference": "^5.0.1",
     "commander": "^14.0.3",
     "vscode-languageserver-textdocument": "^1.0.12",
     "vscode-languageserver-types": "^3.18.0"
