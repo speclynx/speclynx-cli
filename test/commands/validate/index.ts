@@ -12,15 +12,19 @@ const fixtures = path.resolve(__dirname, '..', '..', 'fixtures', 'commands', 'va
 // openapi.json / openapi.yaml are valid documents shared with the overlay tests.
 const sharedFixtures = path.resolve(__dirname, '..', '..', 'fixtures');
 
+// Force NO_COLOR so the stylish formatter's chalk output is deterministic
+// regardless of the runner's TTY/FORCE_COLOR environment.
+const env = { ...process.env, NO_COLOR: '1' };
+
 const run = (args: string[]): Promise<{ stdout: string; stderr: string }> => {
-  return execFileAsync('node', [bin, 'validate', ...args]);
+  return execFileAsync('node', [bin, 'validate', ...args], { env });
 };
 
 const runExpectFailure = async (
   args: string[],
 ): Promise<{ stdout: string; stderr: string; code: number | null }> => {
   try {
-    await execFileAsync('node', [bin, 'validate', ...args]);
+    await execFileAsync('node', [bin, 'validate', ...args], { env });
     throw new Error('Expected command to fail');
   } catch (error: unknown) {
     const e = error as { stdout: string; stderr: string; code: number | null };
@@ -31,56 +35,59 @@ const runExpectFailure = async (
 describe('speclynx validate', function () {
   describe('valid documents', function () {
     it('should report no problems for a valid JSON document', async function () {
-      const { stderr } = await run([path.join(sharedFixtures, 'openapi.json')]);
-      expect(stderr).to.include('No problems found');
+      const { stdout } = await run([path.join(sharedFixtures, 'openapi.json')]);
+      expect(stdout).to.include('No problems found');
     });
 
     it('should report no problems for a valid YAML document', async function () {
-      const { stderr } = await run([path.join(sharedFixtures, 'openapi.yaml')]);
-      expect(stderr).to.include('No problems found');
+      const { stdout } = await run([path.join(sharedFixtures, 'openapi.yaml')]);
+      expect(stdout).to.include('No problems found');
     });
 
-    it('should exit 0 and write nothing to stdout for a valid document', async function () {
-      const { stdout } = await run([path.join(sharedFixtures, 'openapi.json')]);
-      expect(stdout).to.equal('');
+    it('should write nothing to stderr for a valid document', async function () {
+      const { stderr } = await run([path.join(sharedFixtures, 'openapi.json')]);
+      expect(stderr).to.equal('');
     });
   });
 
   describe('invalid documents', function () {
     it('should fail with diagnostics for an invalid JSON document', async function () {
-      const { stderr, code } = await runExpectFailure([
+      const { stdout, code } = await runExpectFailure([
         path.join(fixtures, 'openapi-invalid.json'),
       ]);
       expect(code).to.not.equal(0);
-      expect(stderr).to.include('error');
-      expect(stderr).to.include("should always have a 'title'");
+      expect(stdout).to.include('error');
+      expect(stdout).to.include("should always have a 'title'");
     });
 
     it('should fail with diagnostics for an invalid YAML document', async function () {
-      const { stderr, code } = await runExpectFailure([
+      const { stdout, code } = await runExpectFailure([
         path.join(fixtures, 'openapi-invalid.yaml'),
       ]);
       expect(code).to.not.equal(0);
-      expect(stderr).to.include('error');
+      expect(stdout).to.include('error');
     });
 
-    it('should report a 1-based line:column location', async function () {
-      const { stderr } = await runExpectFailure([path.join(fixtures, 'openapi-invalid.json')]);
-      expect(stderr).to.match(/openapi-invalid\.json:\d+:\d+/);
+    it('should report the file and a 1-based line:column location', async function () {
+      const { stdout } = await runExpectFailure([path.join(fixtures, 'openapi-invalid.json')]);
+      // stylish output: a file header followed by indented `line:column` rows.
+      expect(stdout).to.include('openapi-invalid.json');
+      expect(stdout).to.match(/^\s+\d+:\d+.*\berror\b/m);
     });
   });
 
-  describe('--json option', function () {
-    it('should emit an empty diagnostics array for a valid document', async function () {
-      const { stdout } = await run([path.join(sharedFixtures, 'openapi.json'), '--json']);
-      const diagnostics = JSON.parse(stdout);
-      expect(diagnostics).to.be.an('array').that.is.empty;
+  describe('--format option', function () {
+    it('should default to the stylish formatter', async function () {
+      const { stdout } = await runExpectFailure([path.join(fixtures, 'openapi-invalid.json')]);
+      expect(stdout).to.include('openapi-invalid.json');
+      expect(stdout).to.match(/✖ \d+ problem/);
     });
 
-    it('should emit a non-empty diagnostics array for an invalid document', async function () {
+    it('should render diagnostics as JSON with --format json', async function () {
       const { stdout } = await runExpectFailure([
         path.join(fixtures, 'openapi-invalid.json'),
-        '--json',
+        '--format',
+        'json',
       ]);
       const diagnostics = JSON.parse(stdout);
       expect(diagnostics).to.be.an('array').that.is.not.empty;
@@ -88,13 +95,30 @@ describe('speclynx validate', function () {
       expect(diagnostics[0]).to.have.property('range');
       expect(diagnostics[0]).to.have.property('severity');
     });
+
+    it('should emit an empty JSON array for a valid document', async function () {
+      const { stdout } = await run([path.join(sharedFixtures, 'openapi.json'), '--format', 'json']);
+      const diagnostics = JSON.parse(stdout);
+      expect(diagnostics).to.be.an('array').that.is.empty;
+    });
+
+    it('should reject an unknown format', async function () {
+      const { stderr, code } = await runExpectFailure([
+        path.join(sharedFixtures, 'openapi.json'),
+        '--format',
+        'bogus',
+      ]);
+      expect(code).to.not.equal(0);
+      expect(stderr).to.include('Allowed choices are stylish, json');
+    });
   });
 
   describe('--json-schema-validation option', function () {
     it('should not run AJV validation by default', async function () {
       const { stdout } = await runExpectFailure([
         path.join(fixtures, 'openapi-schema-invalid.json'),
-        '--json',
+        '--format',
+        'json',
       ]);
       const diagnostics = JSON.parse(stdout);
       const sources = diagnostics.map((diagnostic: { source?: string }) => diagnostic.source);
@@ -105,7 +129,8 @@ describe('speclynx validate', function () {
       const { stdout } = await runExpectFailure([
         path.join(fixtures, 'openapi-schema-invalid.json'),
         '--json-schema-validation',
-        '--json',
+        '--format',
+        'json',
       ]);
       const diagnostics = JSON.parse(stdout);
       const sources = diagnostics.map((diagnostic: { source?: string }) => diagnostic.source);
@@ -115,13 +140,13 @@ describe('speclynx validate', function () {
 
   describe('--no-* options', function () {
     it('should not report lint problems when semantic linting is disabled', async function () {
-      const { stderr } = await run([
+      const { stdout } = await run([
         path.join(fixtures, 'openapi-invalid.json'),
         '--no-semantic-validation',
         '--no-semantic-linting',
         '--no-reference-validation',
       ]);
-      expect(stderr).to.include('No problems found');
+      expect(stdout).to.include('No problems found');
     });
   });
 
@@ -131,7 +156,8 @@ describe('speclynx validate', function () {
         path.join(fixtures, 'openapi-many-problems.json'),
         '--max-problems',
         '1',
-        '--json',
+        '--format',
+        'json',
       ]);
       const diagnostics = JSON.parse(stdout);
       expect(diagnostics).to.have.lengthOf(1);
@@ -159,17 +185,17 @@ describe('speclynx validate', function () {
 
   describe('--strict option', function () {
     it('should exit 0 for a document with only warnings by default', async function () {
-      const { stderr } = await run([path.join(fixtures, 'openapi-warnings.yaml')]);
-      expect(stderr).to.include('warning');
+      const { stdout } = await run([path.join(fixtures, 'openapi-warnings.yaml')]);
+      expect(stdout).to.include('warning');
     });
 
     it('should exit non-zero for warnings under --strict', async function () {
-      const { stderr, code } = await runExpectFailure([
+      const { stdout, code } = await runExpectFailure([
         path.join(fixtures, 'openapi-warnings.yaml'),
         '--strict',
       ]);
       expect(code).to.not.equal(0);
-      expect(stderr).to.include('warning');
+      expect(stdout).to.include('warning');
     });
   });
 
@@ -179,11 +205,22 @@ describe('speclynx validate', function () {
         path.join(fixtures, 'openapi-schema-invalid.json'),
         '--json-schema-validation',
         '--better-ajv-errors',
-        '--json',
+        '--format',
+        'json',
       ]);
       const diagnostics = JSON.parse(stdout);
       const messages = diagnostics.map((diagnostic: { message?: string }) => diagnostic.message);
       expect(messages).to.include('"get" property type must be object');
+    });
+
+    it('should warn when used without --json-schema-validation', async function () {
+      const { stderr } = await run([
+        path.join(sharedFixtures, 'openapi.json'),
+        '--better-ajv-errors',
+      ]);
+      expect(stderr).to.include(
+        '--better-ajv-errors has no effect without --json-schema-validation',
+      );
     });
   });
 
@@ -191,7 +228,8 @@ describe('speclynx validate', function () {
     it('should emit complete, parseable JSON well beyond the pipe buffer size', async function () {
       const { stdout } = await runExpectFailure([
         path.join(fixtures, 'openapi-many-problems.json'),
-        '--json',
+        '--format',
+        'json',
       ]);
       expect(stdout.length).to.be.greaterThan(65536);
       const diagnostics = JSON.parse(stdout);
@@ -201,25 +239,25 @@ describe('speclynx validate', function () {
 
   describe('supported specifications', function () {
     it('should validate an invalid AsyncAPI 2.x document', async function () {
-      const { stderr, code } = await runExpectFailure([
+      const { stdout, code } = await runExpectFailure([
         path.join(fixtures, 'asyncapi-invalid.yaml'),
       ]);
       expect(code).to.not.equal(0);
-      expect(stderr).to.include('error');
+      expect(stdout).to.include('error');
     });
 
     it('should validate an invalid Arazzo 1.x document', async function () {
-      const { stderr, code } = await runExpectFailure([path.join(fixtures, 'arazzo-invalid.yaml')]);
+      const { stdout, code } = await runExpectFailure([path.join(fixtures, 'arazzo-invalid.yaml')]);
       expect(code).to.not.equal(0);
-      expect(stderr).to.include('error');
+      expect(stdout).to.include('error');
     });
 
     it('should validate an invalid Overlay 1.x document', async function () {
-      const { stderr, code } = await runExpectFailure([
+      const { stdout, code } = await runExpectFailure([
         path.join(fixtures, 'overlay-invalid.yaml'),
       ]);
       expect(code).to.not.equal(0);
-      expect(stderr).to.include('error');
+      expect(stdout).to.include('error');
     });
   });
 
@@ -231,7 +269,8 @@ describe('speclynx validate', function () {
         path.join(fixtures, 'openapi-external-ref.yaml'),
         '--reference-validation-mode',
         'indirect-external',
-        '--json',
+        '--format',
+        'json',
       ]);
       const diagnostics = JSON.parse(stdout);
       const messages = diagnostics

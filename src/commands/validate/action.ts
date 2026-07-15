@@ -5,8 +5,10 @@ import { TextDocument } from 'vscode-languageserver-textdocument';
 import { DiagnosticSeverity, type Diagnostic } from 'vscode-languageserver-types';
 import type { ValidationContext } from '@speclynx/apidom-ls';
 
+import { formatters, defaultFormat } from './formatters/index.ts';
+
 export interface ValidateActionOptions {
-  json?: boolean;
+  format?: string;
   semanticValidation?: boolean;
   referenceValidation?: boolean;
   semanticLinting?: boolean;
@@ -18,13 +20,6 @@ export interface ValidateActionOptions {
   relatedInformation?: boolean;
   strict?: boolean;
 }
-
-const severityLabels: Record<number, string> = {
-  [DiagnosticSeverity.Error]: 'error',
-  [DiagnosticSeverity.Warning]: 'warning',
-  [DiagnosticSeverity.Information]: 'info',
-  [DiagnosticSeverity.Hint]: 'hint',
-};
 
 // Build a fresh ValidationContext from CLI options. apidom-ls mutates the
 // context object it receives (e.g. betterAjvErrors), so this must not be shared.
@@ -65,17 +60,6 @@ const buildValidationContext = (
 const isFailure = (diagnostic: Diagnostic, strict: boolean): boolean =>
   diagnostic.severity === DiagnosticSeverity.Error ||
   (strict && diagnostic.severity === DiagnosticSeverity.Warning);
-
-const formatDiagnostic = (displayPath: string, diagnostic: Diagnostic): string => {
-  const { line, character } = diagnostic.range.start;
-  const location = `${displayPath}:${line + 1}:${character + 1}`;
-  const severity = severityLabels[diagnostic.severity ?? DiagnosticSeverity.Error] ?? 'error';
-  const suffixParts = [diagnostic.code, diagnostic.source].filter(
-    (part) => part !== undefined && part !== '',
-  );
-  const suffix = suffixParts.length > 0 ? `  [${suffixParts.join(' ')}]` : '';
-  return `${location}  ${severity}  ${diagnostic.message}${suffix}`;
-};
 
 const action = async (filePath: string, opts: ValidateActionOptions): Promise<void> => {
   // --better-ajv-errors only tweaks AJV output, so it is a no-op unless JSON
@@ -154,19 +138,14 @@ const action = async (filePath: string, opts: ValidateActionOptions): Promise<vo
         ? sorted.slice(0, opts.maxProblems)
         : sorted;
 
-    if (opts.json) {
-      process.stdout.write(`${JSON.stringify(reported, null, 2)}\n`);
-    } else if (diagnostics.length === 0) {
-      process.stderr.write('No problems found\n');
-    } else {
-      for (const diagnostic of reported) {
-        process.stderr.write(`${formatDiagnostic(filePath, diagnostic)}\n`);
-      }
-    }
+    // Render via the selected formatter. All formatted output goes to stdout
+    // (stderr is reserved for hard errors), so `--format` is stream-consistent.
+    const formatter = formatters[opts.format ?? defaultFormat] ?? formatters[defaultFormat];
+    process.stdout.write(`${formatter(reported, { path: filePath, total: diagnostics.length })}\n`);
 
     // Set the exit code and let the process exit naturally. Calling process.exit()
     // here would terminate before an async (piped) stdout write drains, truncating
-    // large --json output at the ~64KB pipe buffer.
+    // large output at the ~64KB pipe buffer.
     process.exitCode = failed ? 1 : 0;
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);

@@ -23,8 +23,8 @@ npm run clean          # remove compiled artifacts
 
 - **`bin/speclynx.mjs`** — static entry point with shebang, imports compiled `src/cli.mjs`. Not processed by Babel.
 - **`src/cli.ts`** — root CLI logic using `commander`; registers each command.
-- **`src/commands/<command>/`** — one folder per command, with `index.ts` (the `commander` Command definition + options) and `action.ts` (the async handler and its `*ActionOptions` interface). Subcommands nest further (e.g. `overlay/apply/`). Current commands: `overlay` (with `apply`/`diff`) and `validate` (backed by `@speclynx/apidom-ls`).
-- **`test/`** — Mocha + Chai tests mirroring the `src/commands/` layout. TypeScript files compiled to `.mjs` by Babel before mocha runs them.
+- **`src/commands/<command>/`** — one folder per command, with `index.ts` (the `commander` Command definition + options) and `action.ts` (the async handler and its `*ActionOptions` interface). Subcommands nest further (e.g. `overlay/apply/`). Current commands: `overlay` (with `apply`/`diff`) and `validate` (backed by `@speclynx/apidom-ls`). `validate` also has a `formatters/` folder — a registry of diagnostic renderers (`stylish` default, `json`) selected by `--format`.
+- **`test/`** — Mocha + Chai tests mirroring the `src/commands/` layout, with fixtures under `test/fixtures/commands/<command>/` (only cross-command fixtures live at the `test/fixtures/` root). TypeScript files compiled to `.mjs` by Babel before mocha runs them.
 
 ## Build Pipeline
 
