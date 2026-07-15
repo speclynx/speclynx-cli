@@ -194,11 +194,11 @@ Validate and lint an API definition, powered by the [ApiDOM Language Service](ht
 - Arazzo 1.x
 - Overlay 1.x
 
-By default, `validate` runs three checks:
+By default, `validate` runs three kinds of checks:
 
-- **Structure** — the document conforms to its specification: required fields are present, values have the right types, and objects are shaped correctly.
-- **References** — every `$ref` resolves to something that actually exists.
-- **Linting** — the document follows recommended style and best-practice rules (for example, an `enum` should not be empty).
+- **Semantic validation** — checks the document against the *meaning* of its specification, not just its JSON/YAML syntax: required fields are present, values have the correct types, and objects are shaped as the spec requires.
+- **Reference validation** — checks that every `$ref` resolves to something that actually exists.
+- **Semantic linting** — applies style and best-practice rules on top of validation (for example, flagging an empty `enum`).
 
 JSON Schema (AJV) validation is an additional opt-in layer, enabled with `--json-schema-validation`. It validates the document against the official JSON Schema for its specification and covers OpenAPI 2/3.0/3.1, Arazzo, and Overlay (AsyncAPI relies on the default checks only).
 
