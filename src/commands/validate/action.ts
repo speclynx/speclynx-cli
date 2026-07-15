@@ -66,9 +66,9 @@ const isFailure = (diagnostic: Diagnostic, strict: boolean): boolean =>
   diagnostic.severity === DiagnosticSeverity.Error ||
   (strict && diagnostic.severity === DiagnosticSeverity.Warning);
 
-const formatDiagnostic = (relativePath: string, diagnostic: Diagnostic): string => {
+const formatDiagnostic = (displayPath: string, diagnostic: Diagnostic): string => {
   const { line, character } = diagnostic.range.start;
-  const location = `${relativePath}:${line + 1}:${character + 1}`;
+  const location = `${displayPath}:${line + 1}:${character + 1}`;
   const severity = severityLabels[diagnostic.severity ?? DiagnosticSeverity.Error] ?? 'error';
   const suffixParts = [diagnostic.code, diagnostic.source].filter(
     (part) => part !== undefined && part !== '',
@@ -78,6 +78,28 @@ const formatDiagnostic = (relativePath: string, diagnostic: Diagnostic): string 
 };
 
 const action = async (filePath: string, opts: ValidateActionOptions): Promise<void> => {
+  // --better-ajv-errors only tweaks AJV output, so it is a no-op unless JSON
+  // Schema validation is also enabled. Warn rather than silently ignore it.
+  if (opts.betterAjvErrors && !opts.jsonSchemaValidation) {
+    process.stderr.write(
+      'Warning: --better-ajv-errors has no effect without --json-schema-validation\n',
+    );
+  }
+
+  // Read the input up front so a bad path fails fast, before paying the
+  // multi-second apidom-ls import below.
+  let resolvedPath: string;
+  let content: string;
+  try {
+    resolvedPath = path.resolve(filePath);
+    content = fs.readFileSync(resolvedPath, 'utf-8');
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    process.stderr.write(`Error: ${message}\n`);
+    process.exitCode = 1;
+    return;
+  }
+
   // apidom-ls is a heavy dependency (~seconds to import), so it is loaded lazily
   // here rather than at module top level — otherwise every `speclynx` command
   // (overlay, --help, …) would pay the cost even when validation never runs.
@@ -108,8 +130,6 @@ const action = async (filePath: string, opts: ValidateActionOptions): Promise<vo
   });
 
   try {
-    const resolvedPath = path.resolve(filePath);
-    const content = fs.readFileSync(resolvedPath, 'utf-8');
     const languageId = /\.ya?ml$/i.test(resolvedPath) ? 'yaml' : 'json';
     const fileURI = pathToFileURL(resolvedPath).href;
     const document = TextDocument.create(fileURI, languageId, 0, content);
@@ -121,26 +141,24 @@ const action = async (filePath: string, opts: ValidateActionOptions): Promise<vo
     // what is reported, never what fails the run.
     const failed = diagnostics.some((diagnostic) => isFailure(diagnostic, !!opts.strict));
 
-    const capped =
+    // Sort once, then cap once, so the JSON and human outputs always report the
+    // same diagnostics in the same (line:column:severity) order.
+    const sorted = [...diagnostics].sort(
+      (a, b) =>
+        a.range.start.line - b.range.start.line ||
+        a.range.start.character - b.range.start.character ||
+        (a.severity ?? 0) - (b.severity ?? 0),
+    );
+    const reported =
       typeof opts.maxProblems === 'number' && opts.maxProblems > 0
-        ? diagnostics.slice(0, opts.maxProblems)
-        : diagnostics;
+        ? sorted.slice(0, opts.maxProblems)
+        : sorted;
 
     if (opts.json) {
-      process.stdout.write(`${JSON.stringify(capped, null, 2)}\n`);
+      process.stdout.write(`${JSON.stringify(reported, null, 2)}\n`);
     } else if (diagnostics.length === 0) {
       process.stderr.write('No problems found\n');
     } else {
-      const sorted = [...diagnostics].sort(
-        (a, b) =>
-          a.range.start.line - b.range.start.line ||
-          a.range.start.character - b.range.start.character ||
-          (a.severity ?? 0) - (b.severity ?? 0),
-      );
-      const reported =
-        typeof opts.maxProblems === 'number' && opts.maxProblems > 0
-          ? sorted.slice(0, opts.maxProblems)
-          : sorted;
       for (const diagnostic of reported) {
         process.stderr.write(`${formatDiagnostic(filePath, diagnostic)}\n`);
       }
