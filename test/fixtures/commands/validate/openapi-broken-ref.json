@@ -1,0 +1,20 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Broken Ref", "version": "1.0.0" },
+  "paths": {
+    "/things": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DoesNotExist" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
