@@ -8,7 +8,9 @@ const execFileAsync = promisify(execFile);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const bin = path.resolve(__dirname, '..', '..', '..', 'bin', 'speclynx.mjs');
-const fixtures = path.resolve(__dirname, '..', '..', 'fixtures');
+const fixtures = path.resolve(__dirname, '..', '..', 'fixtures', 'commands', 'validate');
+// openapi.json / openapi.yaml are valid documents shared with the overlay tests.
+const sharedFixtures = path.resolve(__dirname, '..', '..', 'fixtures');
 
 const run = (args: string[]): Promise<{ stdout: string; stderr: string }> => {
   return execFileAsync('node', [bin, 'validate', ...args]);
@@ -29,17 +31,17 @@ const runExpectFailure = async (
 describe('speclynx validate', function () {
   describe('valid documents', function () {
     it('should report no problems for a valid JSON document', async function () {
-      const { stderr } = await run([path.join(fixtures, 'openapi.json')]);
+      const { stderr } = await run([path.join(sharedFixtures, 'openapi.json')]);
       expect(stderr).to.include('No problems found');
     });
 
     it('should report no problems for a valid YAML document', async function () {
-      const { stderr } = await run([path.join(fixtures, 'openapi.yaml')]);
+      const { stderr } = await run([path.join(sharedFixtures, 'openapi.yaml')]);
       expect(stderr).to.include('No problems found');
     });
 
     it('should exit 0 and write nothing to stdout for a valid document', async function () {
-      const { stdout } = await run([path.join(fixtures, 'openapi.json')]);
+      const { stdout } = await run([path.join(sharedFixtures, 'openapi.json')]);
       expect(stdout).to.equal('');
     });
   });
@@ -70,7 +72,7 @@ describe('speclynx validate', function () {
 
   describe('--json option', function () {
     it('should emit an empty diagnostics array for a valid document', async function () {
-      const { stdout } = await run([path.join(fixtures, 'openapi.json'), '--json']);
+      const { stdout } = await run([path.join(sharedFixtures, 'openapi.json'), '--json']);
       const diagnostics = JSON.parse(stdout);
       expect(diagnostics).to.be.an('array').that.is.empty;
     });
@@ -146,7 +148,7 @@ describe('speclynx validate', function () {
 
     it('should reject a non-numeric value', async function () {
       const { stderr, code } = await runExpectFailure([
-        path.join(fixtures, 'openapi.json'),
+        path.join(sharedFixtures, 'openapi.json'),
         '--max-problems',
         'abc',
       ]);
@@ -250,7 +252,7 @@ describe('speclynx validate', function () {
 
     it('should reject an invalid reference validation mode', async function () {
       const { stderr, code } = await runExpectFailure([
-        path.join(fixtures, 'openapi.json'),
+        path.join(sharedFixtures, 'openapi.json'),
         '--reference-validation-mode',
         'bogus',
       ]);
