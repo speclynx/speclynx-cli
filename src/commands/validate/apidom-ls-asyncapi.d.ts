@@ -2,6 +2,8 @@
 // subpaths at type declarations that are not actually shipped — only the main
 // barrel ships types. Declare them here so they can be imported under nodenext
 // module resolution. Each module exports a ValidationProvider constructor.
+// Tracked upstream: speclynx/apidom-internal#180 (remove this shim once the
+// AsyncAPI providers are re-exported from the barrel or the subpath types ship).
 declare module '@speclynx/apidom-ls/services/validation/providers/asyncapi-20-json-schema' {
   import type { ValidationProvider } from '@speclynx/apidom-ls';
   export const Asyncapi20JsonSchemaValidationProvider: new () => ValidationProvider;
