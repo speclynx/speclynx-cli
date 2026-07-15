@@ -7,7 +7,7 @@ describe('speclynx CLI', function () {
     expect(program.name()).to.equal('speclynx');
   });
 
-  it('should have overlay subcommand', function () {
+  it('should have overlay command', function () {
     const overlay = program.commands.find((cmd) => cmd.name() === 'overlay');
     expect(overlay).to.not.be.undefined;
   });
@@ -26,7 +26,7 @@ describe('speclynx CLI', function () {
     expect(diff).to.not.be.undefined;
   });
 
-  it('should have validate subcommand', function () {
+  it('should have validate command', function () {
     const validate = program.commands.find((cmd) => cmd.name() === 'validate');
     expect(validate).to.not.be.undefined;
   });
