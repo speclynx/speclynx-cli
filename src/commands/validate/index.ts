@@ -1,6 +1,7 @@
 import { Command, Option, InvalidArgumentError } from 'commander';
 
 import action from './action.ts';
+import { defaultFormat, formatChoices } from './formatters/index.ts';
 
 const parseMaxProblems = (value: string): number => {
   const parsed = Number.parseInt(value, 10);
@@ -15,7 +16,11 @@ const command = new Command('validate');
 command
   .description('Validate and lint an API definition (OpenAPI, AsyncAPI, Arazzo, Overlay)')
   .argument('<file>', 'path to the API document (JSON or YAML)')
-  .option('--json', 'output raw diagnostics as JSON to stdout')
+  .addOption(
+    new Option('-f, --format <format>', 'output format for diagnostics')
+      .choices(formatChoices)
+      .default(defaultFormat),
+  )
   .option('--no-semantic-validation', 'disable semantic validation')
   .option('--no-reference-validation', 'disable reference validation')
   .option('--no-semantic-linting', 'disable semantic linting')

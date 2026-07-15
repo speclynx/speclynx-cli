@@ -210,7 +210,7 @@ speclynx validate [options] <file>
 
 | Option | Description |
 |--------|-------------|
-| `--json` | Output raw diagnostics as JSON to stdout |
+| `-f, --format <format>` | Output format for diagnostics: `stylish` (default) or `json` |
 | `--no-semantic-validation` | Disable semantic validation |
 | `--no-reference-validation` | Disable reference validation |
 | `--no-semantic-linting` | Disable semantic linting |
@@ -222,9 +222,9 @@ speclynx validate [options] <file>
 | `--related-information` | Include related information in diagnostics |
 | `--strict` | Treat warnings as failures (exit with code 1) |
 
-Diagnostics are written to stderr in a human-readable `file:line:column  severity  message  [code source]` format. The command exits with code `1` when any error-severity diagnostic is found (or any warning under `--strict`), and `0` otherwise — suitable for CI gating. With `--json`, the raw diagnostics array is written to stdout instead.
+Diagnostics are written to stdout. The default `stylish` formatter prints a color-coded, human-readable report — a file header, one aligned `location  severity  code  message` row per problem, and a severity-count summary (colors are disabled automatically when the output is not a TTY, or when `NO_COLOR` is set). `--format json` writes the raw diagnostics array for machine consumption. stderr is reserved for hard errors (e.g. a missing file). The command exits with code `1` when any error-severity diagnostic is found (or any warning under `--strict`), and `0` otherwise — suitable for CI gating.
 
-> **Note:** The `code` value of reference-validation diagnostics is not stable across runs, so consumers that snapshot or diff the `--json` output should not rely on it for reference errors.
+> **Note:** The `code` value of reference-validation diagnostics is not stable across runs, so consumers that snapshot or diff the `--format json` output should not rely on it for reference errors.
 
 #### Examples
 
@@ -237,7 +237,7 @@ speclynx validate openapi.json
 Emit machine-readable diagnostics for further processing:
 
 ```sh
-speclynx validate openapi.yaml --json
+speclynx validate openapi.yaml --format json
 ```
 
 Enable JSON Schema validation with improved error messages:
