@@ -78,14 +78,38 @@ const action = async (filePath: string, opts: ValidateActionOptions): Promise<vo
   // apidom-ls is a heavy dependency (~seconds to import), so it is loaded lazily
   // here rather than at module top level — otherwise every `speclynx` command
   // (overlay, --help, …) would pay the cost even when validation never runs.
-  const {
-    getLanguageService,
-    OpenAPi20JsonSchemaValidationProvider,
-    OpenAPi30JsonSchemaValidationProvider,
-    OpenAPi31JsonSchemaValidationProvider,
-    Arazzo1JsonSchemaValidationProvider,
-    Overlay1JsonSchemaValidationProvider,
-  } = await import('@speclynx/apidom-ls');
+  // Providers come from the apidom-ls barrel where it exports them (typed public
+  // API). AsyncAPI is the exception: the barrel omits its providers, so they are
+  // pulled from subpaths (untyped — see apidom-ls-asyncapi.d.ts) to let
+  // --json-schema-validation cover AsyncAPI 2.0–2.6. This adds ~50ms on top of
+  // the multi-second barrel import. Note OpenAPI 2.0/3.0 have no subpath at all,
+  // so uniform subpath loading is not possible anyway.
+  const [
+    {
+      getLanguageService,
+      OpenAPi20JsonSchemaValidationProvider,
+      OpenAPi30JsonSchemaValidationProvider,
+      OpenAPi31JsonSchemaValidationProvider,
+      Arazzo1JsonSchemaValidationProvider,
+      Overlay1JsonSchemaValidationProvider,
+    },
+    { Asyncapi20JsonSchemaValidationProvider },
+    { Asyncapi21JsonSchemaValidationProvider },
+    { Asyncapi22JsonSchemaValidationProvider },
+    { Asyncapi23JsonSchemaValidationProvider },
+    { Asyncapi24JsonSchemaValidationProvider },
+    { Asyncapi25JsonSchemaValidationProvider },
+    { Asyncapi26JsonSchemaValidationProvider },
+  ] = await Promise.all([
+    import('@speclynx/apidom-ls'),
+    import('@speclynx/apidom-ls/services/validation/providers/asyncapi-20-json-schema'),
+    import('@speclynx/apidom-ls/services/validation/providers/asyncapi-21-json-schema'),
+    import('@speclynx/apidom-ls/services/validation/providers/asyncapi-22-json-schema'),
+    import('@speclynx/apidom-ls/services/validation/providers/asyncapi-23-json-schema'),
+    import('@speclynx/apidom-ls/services/validation/providers/asyncapi-24-json-schema'),
+    import('@speclynx/apidom-ls/services/validation/providers/asyncapi-25-json-schema'),
+    import('@speclynx/apidom-ls/services/validation/providers/asyncapi-26-json-schema'),
+  ]);
 
   const service = getLanguageService({
     validatorProviders: [
@@ -94,6 +118,13 @@ const action = async (filePath: string, opts: ValidateActionOptions): Promise<vo
       new OpenAPi31JsonSchemaValidationProvider(),
       new Arazzo1JsonSchemaValidationProvider(),
       new Overlay1JsonSchemaValidationProvider(),
+      new Asyncapi20JsonSchemaValidationProvider(),
+      new Asyncapi21JsonSchemaValidationProvider(),
+      new Asyncapi22JsonSchemaValidationProvider(),
+      new Asyncapi23JsonSchemaValidationProvider(),
+      new Asyncapi24JsonSchemaValidationProvider(),
+      new Asyncapi25JsonSchemaValidationProvider(),
+      new Asyncapi26JsonSchemaValidationProvider(),
     ],
   });
 
