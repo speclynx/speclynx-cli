@@ -200,7 +200,7 @@ By default, `validate` runs three kinds of checks:
 - **Reference validation** — checks that every `$ref` resolves to something that actually exists.
 - **Semantic linting** — applies style and best-practice rules on top of validation (for example, flagging an empty `enum`).
 
-JSON Schema (AJV) validation is an additional opt-in layer, enabled with `--json-schema-validation`. It validates the document against the official JSON Schema for its specification and covers OpenAPI 2/3.0/3.1, Arazzo, and Overlay (AsyncAPI relies on the default checks only).
+JSON Schema (AJV) validation is an additional opt-in layer, enabled with `--json-schema-validation`. It validates the document against the official JSON Schema for its specification and covers OpenAPI 2/3.0/3.1, AsyncAPI 2.x, Arazzo, and Overlay.
 
 ```
 speclynx validate [options] <file>
