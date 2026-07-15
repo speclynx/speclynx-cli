@@ -2,7 +2,7 @@ overlay: "1.0.0"
 info:
   title: Add description via extends
   version: "1.0.0"
-extends: "./openapi.yaml"
+extends: "../../openapi.yaml"
 actions:
   - target: "$.info"
     update:

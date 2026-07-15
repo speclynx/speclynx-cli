@@ -4,7 +4,7 @@
     "title": "Add description via extends",
     "version": "1.0.0"
   },
-  "extends": "./openapi.json",
+  "extends": "../../openapi.json",
   "actions": [
     {
       "target": "$.info",

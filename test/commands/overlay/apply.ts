@@ -10,7 +10,9 @@ const execFileAsync = promisify(execFile);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const bin = path.resolve(__dirname, '..', '..', '..', 'bin', 'speclynx.mjs');
-const fixtures = path.resolve(__dirname, '..', '..', 'fixtures');
+const fixtures = path.resolve(__dirname, '..', '..', 'fixtures', 'commands', 'overlay');
+// openapi.json / openapi.yaml are valid documents shared with the validate tests.
+const sharedFixtures = path.resolve(__dirname, '..', '..', 'fixtures');
 
 const run = (args: string[]): Promise<{ stdout: string; stderr: string }> => {
   return execFileAsync('node', [bin, 'overlay', 'apply', ...args]);
@@ -33,7 +35,7 @@ describe('speclynx overlay apply', function () {
     it('should apply overlay to JSON target', async function () {
       const { stdout } = await run([
         path.join(fixtures, 'overlay.json'),
-        path.join(fixtures, 'openapi.json'),
+        path.join(sharedFixtures, 'openapi.json'),
       ]);
       const result = JSON.parse(stdout);
       expect(result.info.description).to.equal('Added by overlay');
@@ -43,7 +45,7 @@ describe('speclynx overlay apply', function () {
     it('should output valid JSON by default for JSON target', async function () {
       const { stdout } = await run([
         path.join(fixtures, 'overlay.json'),
-        path.join(fixtures, 'openapi.json'),
+        path.join(sharedFixtures, 'openapi.json'),
       ]);
       expect(() => JSON.parse(stdout)).to.not.throw();
     });
@@ -53,7 +55,7 @@ describe('speclynx overlay apply', function () {
     it('should apply overlay to YAML target', async function () {
       const { stdout } = await run([
         path.join(fixtures, 'overlay.yaml'),
-        path.join(fixtures, 'openapi.yaml'),
+        path.join(sharedFixtures, 'openapi.yaml'),
       ]);
       expect(stdout).to.include('description: Added by overlay');
     });
@@ -61,7 +63,7 @@ describe('speclynx overlay apply', function () {
     it('should auto-detect YAML output format from target extension', async function () {
       const { stdout } = await run([
         path.join(fixtures, 'overlay.yaml'),
-        path.join(fixtures, 'openapi.yaml'),
+        path.join(sharedFixtures, 'openapi.yaml'),
       ]);
       // YAML output should not start with {
       expect(stdout.trimStart()).to.not.match(/^\{/);
@@ -88,7 +90,7 @@ describe('speclynx overlay apply', function () {
     it('should force JSON output with -f json', async function () {
       const { stdout } = await run([
         path.join(fixtures, 'overlay.yaml'),
-        path.join(fixtures, 'openapi.yaml'),
+        path.join(sharedFixtures, 'openapi.yaml'),
         '-f',
         'json',
       ]);
@@ -98,7 +100,7 @@ describe('speclynx overlay apply', function () {
     it('should force YAML output with -f yaml', async function () {
       const { stdout } = await run([
         path.join(fixtures, 'overlay.json'),
-        path.join(fixtures, 'openapi.json'),
+        path.join(sharedFixtures, 'openapi.json'),
         '-f',
         'yaml',
       ]);
@@ -109,7 +111,7 @@ describe('speclynx overlay apply', function () {
     it('should reject invalid format values', async function () {
       const { stderr, code } = await runExpectFailure([
         path.join(fixtures, 'overlay.json'),
-        path.join(fixtures, 'openapi.json'),
+        path.join(sharedFixtures, 'openapi.json'),
         '-f',
         'xml',
       ]);
@@ -124,7 +126,7 @@ describe('speclynx overlay apply', function () {
       try {
         const { stdout } = await run([
           path.join(fixtures, 'overlay.json'),
-          path.join(fixtures, 'openapi.json'),
+          path.join(sharedFixtures, 'openapi.json'),
           '-o',
           tmpFile,
         ]);
@@ -144,7 +146,7 @@ describe('speclynx overlay apply', function () {
     it('should apply multiple overlays sequentially', async function () {
       const { stdout } = await run([
         path.join(fixtures, 'overlay.json'),
-        path.join(fixtures, 'openapi.json'),
+        path.join(sharedFixtures, 'openapi.json'),
         '--overlay',
         path.join(fixtures, 'overlay-title.json'),
       ]);
@@ -158,7 +160,7 @@ describe('speclynx overlay apply', function () {
     it('should succeed when all targets match', async function () {
       const { stdout } = await run([
         path.join(fixtures, 'overlay.json'),
-        path.join(fixtures, 'openapi.json'),
+        path.join(sharedFixtures, 'openapi.json'),
         '--strict',
       ]);
       const result = JSON.parse(stdout);
@@ -168,7 +170,7 @@ describe('speclynx overlay apply', function () {
     it('should fail when a target matches zero nodes', async function () {
       const { stderr, code } = await runExpectFailure([
         path.join(fixtures, 'overlay-nomatch.json'),
-        path.join(fixtures, 'openapi.json'),
+        path.join(sharedFixtures, 'openapi.json'),
         '--strict',
       ]);
       expect(code).to.not.equal(0);
@@ -178,7 +180,7 @@ describe('speclynx overlay apply', function () {
     it('should silently skip zero-match targets without --strict', async function () {
       const { stdout } = await run([
         path.join(fixtures, 'overlay-nomatch.json'),
-        path.join(fixtures, 'openapi.json'),
+        path.join(sharedFixtures, 'openapi.json'),
       ]);
       const result = JSON.parse(stdout);
       // original document unchanged
@@ -191,7 +193,7 @@ describe('speclynx overlay apply', function () {
     it('should print trace to stderr', async function () {
       const { stderr } = await run([
         path.join(fixtures, 'overlay.json'),
-        path.join(fixtures, 'openapi.json'),
+        path.join(sharedFixtures, 'openapi.json'),
         '--verbose',
       ]);
       expect(stderr).to.include('Overlay:');
@@ -204,7 +206,7 @@ describe('speclynx overlay apply', function () {
     it('should not print trace without --verbose', async function () {
       const { stderr } = await run([
         path.join(fixtures, 'overlay.json'),
-        path.join(fixtures, 'openapi.json'),
+        path.join(sharedFixtures, 'openapi.json'),
       ]);
       expect(stderr).to.equal('');
     });
@@ -212,7 +214,7 @@ describe('speclynx overlay apply', function () {
     it('should still output result to stdout when verbose', async function () {
       const { stdout } = await run([
         path.join(fixtures, 'overlay.json'),
-        path.join(fixtures, 'openapi.json'),
+        path.join(sharedFixtures, 'openapi.json'),
         '--verbose',
       ]);
       const result = JSON.parse(stdout);
@@ -224,7 +226,7 @@ describe('speclynx overlay apply', function () {
     it('should fail with non-existent overlay file', async function () {
       const { stderr, code } = await runExpectFailure([
         path.join(fixtures, 'nonexistent.json'),
-        path.join(fixtures, 'openapi.json'),
+        path.join(sharedFixtures, 'openapi.json'),
       ]);
       expect(code).to.not.equal(0);
       expect(stderr).to.include('Error:');
