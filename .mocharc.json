@@ -2,5 +2,5 @@
   "recursive": true,
   "spec": "test/**/*.mjs",
   "ignore": ["test/fixtures/**"],
-  "timeout": 30000
+  "timeout": 10000
 }
