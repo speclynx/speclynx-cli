@@ -210,6 +210,29 @@ describe('speclynx validate', function () {
       const messages = diagnostics.map((diagnostic: { message?: string }) => diagnostic.message);
       expect(messages).to.include('"get" property type must be object');
     });
+
+    it('should not run AJV validation without the flag', async function () {
+      const { stdout } = await runExpectFailure([
+        path.join(fixtures, 'asyncapi-invalid.yaml'),
+        '--format',
+        'json',
+      ]);
+      const diagnostics = JSON.parse(stdout);
+      const sources = diagnostics.map((diagnostic: { source?: string }) => diagnostic.source);
+      expect(sources).to.not.include('asyncapi schema');
+    });
+
+    it('should run AJV validation for AsyncAPI with --json-schema-validation', async function () {
+      const { stdout } = await runExpectFailure([
+        path.join(fixtures, 'asyncapi-invalid.yaml'),
+        '--json-schema-validation',
+        '--format',
+        'json',
+      ]);
+      const diagnostics = JSON.parse(stdout);
+      const sources = diagnostics.map((diagnostic: { source?: string }) => diagnostic.source);
+      expect(sources).to.include('asyncapi schema');
+    });
   });
 
   describe('reference validation', function () {
