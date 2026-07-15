@@ -138,18 +138,6 @@ describe('speclynx validate', function () {
     });
   });
 
-  describe('--no-* options', function () {
-    it('should not report lint problems when semantic linting is disabled', async function () {
-      const { stdout } = await run([
-        path.join(fixtures, 'openapi-invalid.json'),
-        '--no-semantic-validation',
-        '--no-semantic-linting',
-        '--no-reference-validation',
-      ]);
-      expect(stdout).to.include('No problems found');
-    });
-  });
-
   describe('--max-problems option', function () {
     it('should cap the number of reported diagnostics', async function () {
       const { stdout } = await runExpectFailure([
@@ -183,28 +171,38 @@ describe('speclynx validate', function () {
     });
   });
 
-  describe('--strict option', function () {
+  describe('--fail-severity option', function () {
     it('should exit 0 for a document with only warnings by default', async function () {
       const { stdout } = await run([path.join(fixtures, 'openapi-warnings.yaml')]);
       expect(stdout).to.include('warning');
     });
 
-    it('should exit non-zero for warnings under --strict', async function () {
+    it('should exit non-zero for warnings with --fail-severity warning', async function () {
       const { stdout, code } = await runExpectFailure([
         path.join(fixtures, 'openapi-warnings.yaml'),
-        '--strict',
+        '--fail-severity',
+        'warning',
       ]);
       expect(code).to.not.equal(0);
       expect(stdout).to.include('warning');
     });
+
+    it('should reject an unknown severity', async function () {
+      const { stderr, code } = await runExpectFailure([
+        path.join(sharedFixtures, 'openapi.json'),
+        '--fail-severity',
+        'bogus',
+      ]);
+      expect(code).to.not.equal(0);
+      expect(stderr).to.include('Allowed choices are error, warning, info, hint');
+    });
   });
 
-  describe('--better-ajv-errors option', function () {
-    it('should produce more descriptive AJV messages', async function () {
+  describe('JSON Schema validation', function () {
+    it('should produce descriptive AJV messages with --json-schema-validation', async function () {
       const { stdout } = await runExpectFailure([
         path.join(fixtures, 'openapi-schema-invalid.json'),
         '--json-schema-validation',
-        '--better-ajv-errors',
         '--format',
         'json',
       ]);
@@ -212,15 +210,16 @@ describe('speclynx validate', function () {
       const messages = diagnostics.map((diagnostic: { message?: string }) => diagnostic.message);
       expect(messages).to.include('"get" property type must be object');
     });
+  });
 
-    it('should warn when used without --json-schema-validation', async function () {
-      const { stderr } = await run([
-        path.join(sharedFixtures, 'openapi.json'),
-        '--better-ajv-errors',
+  describe('reference validation', function () {
+    it('should flag an unresolvable $ref by default', async function () {
+      // reference validation runs without any opt-in flag
+      const { stdout, code } = await runExpectFailure([
+        path.join(fixtures, 'openapi-broken-ref.json'),
       ]);
-      expect(stderr).to.include(
-        '--better-ajv-errors has no effect without --json-schema-validation',
-      );
+      expect(code).to.not.equal(0);
+      expect(stdout).to.include('local reference not found');
     });
   });
 
@@ -261,27 +260,6 @@ describe('speclynx validate', function () {
     });
   });
 
-  describe('reference resolution base URI', function () {
-    it('should resolve relative external refs against the input file by default', async function () {
-      // Without a file-anchored base URI, a relative external $ref resolves over
-      // HTTP; the diagnostic must instead reference the sibling file's file:// URI.
-      const { stdout } = await runExpectFailure([
-        path.join(fixtures, 'openapi-external-ref.yaml'),
-        '--reference-validation-mode',
-        'indirect-external',
-        '--format',
-        'json',
-      ]);
-      const diagnostics = JSON.parse(stdout);
-      const messages = diagnostics
-        .map((diagnostic: { message?: string }) => diagnostic.message ?? '')
-        .join('\n');
-      expect(messages).to.include('openapi-external-ref-thing.yaml');
-      expect(messages).to.include('file://');
-      expect(messages).to.not.include('http');
-    });
-  });
-
   describe('error handling', function () {
     it('should fail for a non-existent file', async function () {
       const { stderr, code } = await runExpectFailure([path.join(fixtures, 'nonexistent.json')]);
@@ -289,14 +267,13 @@ describe('speclynx validate', function () {
       expect(stderr).to.include('Error:');
     });
 
-    it('should reject an invalid reference validation mode', async function () {
+    it('should reject an unknown option', async function () {
       const { stderr, code } = await runExpectFailure([
         path.join(sharedFixtures, 'openapi.json'),
-        '--reference-validation-mode',
-        'bogus',
+        '--no-semantic-validation',
       ]);
       expect(code).to.not.equal(0);
-      expect(stderr).to.include('Allowed choices are legacy, indirect, indirect-external');
+      expect(stderr).to.include('unknown option');
     });
   });
 });

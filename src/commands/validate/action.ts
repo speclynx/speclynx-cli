@@ -9,67 +9,58 @@ import { formatters, defaultFormat } from './formatters/index.ts';
 
 export interface ValidateActionOptions {
   format?: string;
-  semanticValidation?: boolean;
-  referenceValidation?: boolean;
-  semanticLinting?: boolean;
   jsonSchemaValidation?: boolean;
-  betterAjvErrors?: boolean;
   maxProblems?: number;
-  baseUri?: string;
-  referenceValidationMode?: string;
-  relatedInformation?: boolean;
-  strict?: boolean;
+  failSeverity?: string;
 }
+
+// --fail-severity choices, mapped to their LSP severity. Error is the most
+// severe (smallest numeric value).
+const failSeverities: Record<string, DiagnosticSeverity> = {
+  error: DiagnosticSeverity.Error,
+  warning: DiagnosticSeverity.Warning,
+  info: DiagnosticSeverity.Information,
+  hint: DiagnosticSeverity.Hint,
+};
+
+export const failSeverityChoices = Object.keys(failSeverities);
+
+export const defaultFailSeverity = 'error';
 
 // Build a fresh ValidationContext from CLI options. apidom-ls mutates the
 // context object it receives (e.g. betterAjvErrors), so this must not be shared.
-// referenceValidationModes maps the CLI choice strings to the (dynamically
-// imported) ReferenceValidationMode enum.
+// This first cut is intentionally opinionated: semantic validation, reference
+// validation, and semantic linting are always on and not exposed as toggles.
 const buildValidationContext = (
   opts: ValidateActionOptions,
-  referenceValidationModes: Record<string, number>,
   fileURI: string,
 ): ValidationContext => {
-  const context: ValidationContext = {};
+  const context: ValidationContext = {
+    semanticValidation: true,
+    referenceValidation: true,
+    semanticLinting: true,
+  };
 
-  // default-on booleans exposed via commander `--no-*` negations
-  if (opts.semanticValidation === false) context.semanticValidation = false;
-  if (opts.referenceValidation === false) context.referenceValidation = false;
-  if (opts.semanticLinting === false) context.semanticLinting = false;
-
-  // default-off booleans
-  if (opts.jsonSchemaValidation) context.jsonSchemaValidation = true;
-  if (opts.betterAjvErrors) context.betterAjvErrors = true;
-  if (opts.relatedInformation) context.relatedInformation = true;
-
-  // Default the reference-resolution base to the input file so relative external
-  // $refs (e.g. ./components.yaml#/...) resolve from the file's location out of
-  // the box; an explicit --base-uri overrides it.
-  context.baseURI = opts.baseUri ?? fileURI;
-  if (opts.referenceValidationMode) {
-    context.referenceValidationMode = referenceValidationModes[opts.referenceValidationMode];
+  // JSON Schema (AJV) validation is opt-in; when enabled, always use the
+  // friendlier AJV error messages.
+  if (opts.jsonSchemaValidation) {
+    context.jsonSchemaValidation = true;
+    context.betterAjvErrors = true;
   }
 
-  // Note: --max-problems is NOT forwarded as maxNumberOfProblems here on purpose.
-  // The cap is applied CLI-side to the returned diagnostics (for reporting only),
-  // so the failure/exit-code decision always sees the complete diagnostic set.
+  // Anchor reference resolution to the input file so relative external $refs
+  // (e.g. ./components.yaml#/...) resolve from the file's location.
+  context.baseURI = fileURI;
+
   return context;
 };
 
-// A diagnostic fails the run when it is an error, or a warning under --strict.
-const isFailure = (diagnostic: Diagnostic, strict: boolean): boolean =>
-  diagnostic.severity === DiagnosticSeverity.Error ||
-  (strict && diagnostic.severity === DiagnosticSeverity.Warning);
+// A diagnostic fails the run when its severity is at least as severe as the
+// --fail-severity threshold (Error is most severe = smallest numeric value).
+const isFailure = (diagnostic: Diagnostic, threshold: DiagnosticSeverity): boolean =>
+  (diagnostic.severity ?? DiagnosticSeverity.Error) <= threshold;
 
 const action = async (filePath: string, opts: ValidateActionOptions): Promise<void> => {
-  // --better-ajv-errors only tweaks AJV output, so it is a no-op unless JSON
-  // Schema validation is also enabled. Warn rather than silently ignore it.
-  if (opts.betterAjvErrors && !opts.jsonSchemaValidation) {
-    process.stderr.write(
-      'Warning: --better-ajv-errors has no effect without --json-schema-validation\n',
-    );
-  }
-
   // Read the input up front so a bad path fails fast, before paying the
   // multi-second apidom-ls import below.
   let resolvedPath: string;
@@ -89,19 +80,12 @@ const action = async (filePath: string, opts: ValidateActionOptions): Promise<vo
   // (overlay, --help, …) would pay the cost even when validation never runs.
   const {
     getLanguageService,
-    ReferenceValidationMode,
     OpenAPi20JsonSchemaValidationProvider,
     OpenAPi30JsonSchemaValidationProvider,
     OpenAPi31JsonSchemaValidationProvider,
     Arazzo1JsonSchemaValidationProvider,
     Overlay1JsonSchemaValidationProvider,
   } = await import('@speclynx/apidom-ls');
-
-  const referenceValidationModes: Record<string, number> = {
-    legacy: ReferenceValidationMode.LEGACY,
-    indirect: ReferenceValidationMode.APIDOM_INDIRECT,
-    'indirect-external': ReferenceValidationMode.APIDOM_INDIRECT_EXTERNAL,
-  };
 
   const service = getLanguageService({
     validatorProviders: [
@@ -118,15 +102,16 @@ const action = async (filePath: string, opts: ValidateActionOptions): Promise<vo
     const fileURI = pathToFileURL(resolvedPath).href;
     const document = TextDocument.create(fileURI, languageId, 0, content);
 
-    const validationContext = buildValidationContext(opts, referenceValidationModes, fileURI);
+    const validationContext = buildValidationContext(opts, fileURI);
     const diagnostics = await service.doValidation(document, validationContext);
 
-    // The exit code reflects ALL detected problems; --max-problems only bounds
-    // what is reported, never what fails the run.
-    const failed = diagnostics.some((diagnostic) => isFailure(diagnostic, !!opts.strict));
+    // A diagnostic at or above the --fail-severity threshold fails the run.
+    const threshold = failSeverities[opts.failSeverity ?? defaultFailSeverity];
+    const failed = diagnostics.some((diagnostic) => isFailure(diagnostic, threshold));
 
-    // Sort once, then cap once, so the JSON and human outputs always report the
-    // same diagnostics in the same (line:column:severity) order.
+    // Sort once, then cap once, so the JSON and human outputs report the same
+    // diagnostics in the same (line:column:severity) order. The exit code above
+    // is computed from the full set, so --max-problems never masks a failure.
     const sorted = [...diagnostics].sort(
       (a, b) =>
         a.range.start.line - b.range.start.line ||

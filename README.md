@@ -211,18 +211,11 @@ speclynx validate [options] <file>
 | Option | Description |
 |--------|-------------|
 | `-f, --format <format>` | Output format for diagnostics: `stylish` (default) or `json` |
-| `--no-semantic-validation` | Disable semantic validation |
-| `--no-reference-validation` | Disable reference validation |
-| `--no-semantic-linting` | Disable semantic linting |
-| `--json-schema-validation` | Enable JSON Schema (AJV) validation |
-| `--better-ajv-errors` | Use better AJV error messages (with `--json-schema-validation`) |
+| `--json-schema-validation` | Enable JSON Schema (AJV) validation (with friendlier error messages) |
 | `--max-problems <n>` | Maximum number of problems to report |
-| `--base-uri <uri>` | Base URI used to resolve references (defaults to the input file's location) |
-| `--reference-validation-mode <mode>` | Reference validation mode: `legacy`, `indirect`, or `indirect-external` |
-| `--related-information` | Include related information in diagnostics |
-| `--strict` | Treat warnings as failures (exit with code 1) |
+| `--fail-severity <severity>` | Minimum diagnostic severity that fails the run: `error` (default), `warning`, `info`, or `hint` |
 
-Diagnostics are written to stdout. The default `stylish` formatter prints a color-coded, human-readable report — a file header, one aligned `location  severity  code  message` row per problem, and a severity-count summary (colors are disabled automatically when the output is not a TTY, or when `NO_COLOR` is set). `--format json` writes the raw diagnostics array for machine consumption. stderr is reserved for hard errors (e.g. a missing file). The command exits with code `1` when any error-severity diagnostic is found (or any warning under `--strict`), and `0` otherwise — suitable for CI gating.
+Diagnostics are written to stdout. The default `stylish` formatter prints a color-coded, human-readable report — a file header, one aligned `location  severity  code  message` row per problem, and a severity-count summary (colors are disabled automatically when the output is not a TTY, or when `NO_COLOR` is set). `--format json` writes the raw diagnostics array for machine consumption. stderr is reserved for hard errors (e.g. a missing file). The command exits with code `1` when a diagnostic at or above `--fail-severity` is found, and `0` otherwise — suitable for CI gating.
 
 > **Note:** The `code` value of reference-validation diagnostics is not stable across runs, so consumers that snapshot or diff the `--format json` output should not rely on it for reference errors.
 
@@ -240,22 +233,16 @@ Emit machine-readable diagnostics for further processing:
 speclynx validate openapi.yaml --format json
 ```
 
-Enable JSON Schema validation with improved error messages:
+Enable JSON Schema (AJV) validation on top of the default checks:
 
 ```sh
-speclynx validate openapi.json --json-schema-validation --better-ajv-errors
+speclynx validate openapi.json --json-schema-validation
 ```
 
 Treat lint warnings as failures in CI:
 
 ```sh
-speclynx validate openapi.json --strict
-```
-
-Run only JSON Schema validation, skipping semantic checks and linting:
-
-```sh
-speclynx validate openapi.json --json-schema-validation --no-semantic-validation --no-semantic-linting --no-reference-validation
+speclynx validate openapi.json --fail-severity warning
 ```
 
 ## License
