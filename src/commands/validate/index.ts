@@ -22,6 +22,7 @@ command
       .choices(formatChoices)
       .default(defaultFormat),
   )
+  .option('--json', 'shorthand for --format json')
   .option('--json-schema-validation', 'enable JSON Schema (AJV) validation')
   .option('--max-problems <n>', 'maximum number of problems to report', parseMaxProblems)
   .addOption(

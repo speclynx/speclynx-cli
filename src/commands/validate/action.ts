@@ -9,6 +9,7 @@ import { formatters, defaultFormat } from './formatters/index.ts';
 
 export interface ValidateActionOptions {
   format?: string;
+  json?: boolean;
   jsonSchemaValidation?: boolean;
   maxProblems?: number;
   failSeverity?: string;
@@ -156,7 +157,9 @@ const action = async (filePath: string, opts: ValidateActionOptions): Promise<vo
 
     // Render via the selected formatter. All formatted output goes to stdout
     // (stderr is reserved for hard errors), so `--format` is stream-consistent.
-    const formatter = formatters[opts.format ?? defaultFormat] ?? formatters[defaultFormat];
+    // --json is shorthand for --format json and wins if both are given.
+    const format = opts.json ? 'json' : (opts.format ?? defaultFormat);
+    const formatter = formatters[format] ?? formatters[defaultFormat];
     process.stdout.write(`${formatter(reported, { path: filePath, total: diagnostics.length })}\n`);
 
     // Set the exit code and let the process exit naturally. Calling process.exit()
