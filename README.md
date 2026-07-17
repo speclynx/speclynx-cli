@@ -217,6 +217,7 @@ speclynx validate [options] <file>
 | Option | Description |
 |--------|-------------|
 | `-f, --format <format>` | Output format for diagnostics: `stylish` (default) or `json` |
+| `--json` | Shorthand for `--format json` (wins if both are given) |
 | `--json-schema-validation` | Enable JSON Schema (AJV) validation (with friendlier error messages) |
 | `--max-problems <n>` | Maximum number of problems to report |
 | `--fail-severity <severity>` | Minimum diagnostic severity that fails the run: `error` (default), `warning`, `info`, or `hint` |
