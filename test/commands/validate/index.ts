@@ -102,6 +102,26 @@ describe('speclynx validate', function () {
       expect(diagnostics).to.be.an('array').that.is.empty;
     });
 
+    it('should treat --json as shorthand for --format json', async function () {
+      const { stdout } = await runExpectFailure([
+        path.join(fixtures, 'openapi-invalid.json'),
+        '--json',
+      ]);
+      const diagnostics = JSON.parse(stdout);
+      expect(diagnostics).to.be.an('array').that.is.not.empty;
+      expect(diagnostics[0]).to.have.property('range');
+    });
+
+    it('should let --json win over --format', async function () {
+      const { stdout } = await runExpectFailure([
+        path.join(fixtures, 'openapi-invalid.json'),
+        '--format',
+        'stylish',
+        '--json',
+      ]);
+      expect(() => JSON.parse(stdout)).to.not.throw();
+    });
+
     it('should reject an unknown format', async function () {
       const { stderr, code } = await runExpectFailure([
         path.join(sharedFixtures, 'openapi.json'),
