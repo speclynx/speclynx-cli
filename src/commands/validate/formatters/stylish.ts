@@ -1,9 +1,14 @@
-import chalk from 'chalk';
+import { Chalk } from 'chalk';
 import { DiagnosticSeverity, type Diagnostic } from 'vscode-languageserver-types';
 
 import type { Formatter, FormatterContext } from './types.ts';
 
-const severityToString = (severity: DiagnosticSeverity | undefined): string => {
+type ChalkInstance = InstanceType<typeof Chalk>;
+
+const severityToString = (
+  chalk: ChalkInstance,
+  severity: DiagnosticSeverity | undefined,
+): string => {
   switch (severity) {
     case DiagnosticSeverity.Error:
       return chalk.red('error');
@@ -37,11 +42,15 @@ const pluralize = (word: string, count: number): string =>
 
 // eslint/spectral-style "stylish" output: a file header, one aligned row per
 // diagnostic (`location  severity  code  message`), and a severity-count
-// summary. Colors are applied via chalk, which auto-disables on non-TTY output.
+// summary. Colors are applied via chalk, which auto-disables on non-TTY output;
+// when `context.color === false` (e.g. writing to a file) they are forced off
+// regardless of the terminal, so file reports stay plain text.
 const stylish: Formatter = (diagnostics, context: FormatterContext): string => {
   if (diagnostics.length === 0) {
     return 'No problems found';
   }
+
+  const chalk = context.color === false ? new Chalk({ level: 0 }) : new Chalk();
 
   // Column widths for alignment (measured on the uncolored strings).
   const maxLocationLength = Math.max(...diagnostics.map((d) => formatLocation(d).length));
@@ -51,7 +60,7 @@ const stylish: Formatter = (diagnostics, context: FormatterContext): string => {
 
   for (const diagnostic of diagnostics) {
     const location = chalk.dim(formatLocation(diagnostic).padEnd(maxLocationLength));
-    const severity = severityToString(diagnostic.severity);
+    const severity = severityToString(chalk, diagnostic.severity);
     const codeStr = diagnostic.code ? String(diagnostic.code) : '';
     const code = codeStr ? chalk.cyan(codeStr.padEnd(maxCodeLength)) : ' '.repeat(maxCodeLength);
     lines.push(`  ${location}  ${severity}  ${code}  ${diagnostic.message}`);

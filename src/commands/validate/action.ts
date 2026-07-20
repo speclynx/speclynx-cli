@@ -117,6 +117,15 @@ const action = async (source: string, opts: ValidateActionOptions): Promise<void
     return;
   }
 
+  // Refuse to overwrite the input document with the diagnostics report — that
+  // would silently destroy the user's API definition. Checked up front, before
+  // the heavy apidom-ls import, so it fails fast.
+  if (opts.output && path.resolve(opts.output) === resolvedPath) {
+    process.stderr.write('Error: --output path must differ from the input file\n');
+    process.exitCode = 1;
+    return;
+  }
+
   // apidom-ls is a heavy dependency (~seconds to import), so it is loaded lazily
   // here rather than at module top level — otherwise every `speclynx` command
   // (overlay, --help, …) would pay the cost even when validation never runs.
@@ -199,11 +208,17 @@ const action = async (source: string, opts: ValidateActionOptions): Promise<void
 
     // Render via the selected formatter. Formatted output goes to stdout by
     // default (stderr is reserved for hard errors), so `--format` is
-    // stream-consistent; -o/--output redirects it to a file instead.
+    // stream-consistent; -o/--output redirects it to a file instead. When
+    // writing to a file, disable color so the report never contains ANSI escapes
+    // regardless of the terminal (chalk keys off process.stdout, not the file).
     // --json is shorthand for --format json and wins if both are given.
     const format = opts.json ? 'json' : (opts.format ?? defaultFormat);
     const formatter = formatters[format] ?? formatters[defaultFormat];
-    const rendered = `${formatter(reported, { path: source, total: diagnostics.length })}\n`;
+    const rendered = `${formatter(reported, {
+      path: source,
+      total: diagnostics.length,
+      ...(opts.output ? { color: false } : {}),
+    })}\n`;
 
     if (opts.output) {
       fs.writeFileSync(path.resolve(opts.output), rendered, 'utf-8');

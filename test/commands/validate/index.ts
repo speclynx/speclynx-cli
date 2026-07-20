@@ -186,6 +186,43 @@ describe('speclynx validate', function () {
       expect(code).to.not.equal(0);
       expect(stderr).to.include('Error:');
     });
+
+    it('should refuse to overwrite the input document and leave it untouched', async function () {
+      const specFile = path.join(os.tmpdir(), `speclynx-validate-input-${Date.now()}.json`);
+      const original = fs.readFileSync(path.join(sharedFixtures, 'openapi.json'), 'utf-8');
+      fs.writeFileSync(specFile, original, 'utf-8');
+      try {
+        const { stderr, code } = await runExpectFailure([specFile, '-o', specFile]);
+        expect(code).to.not.equal(0);
+        expect(stderr).to.include('must differ from the input file');
+        // The input document must be preserved byte-for-byte.
+        expect(fs.readFileSync(specFile, 'utf-8')).to.equal(original);
+      } finally {
+        if (fs.existsSync(specFile)) {
+          fs.unlinkSync(specFile);
+        }
+      }
+    });
+
+    it('should never write ANSI color codes to a file, even under FORCE_COLOR', async function () {
+      const tmpFile = path.join(os.tmpdir(), `speclynx-validate-color-${Date.now()}.txt`);
+      try {
+        // FORCE_COLOR would make chalk emit ANSI on stdout; the file must stay plain.
+        await execFileAsync(
+          'node',
+          [bin, 'validate', path.join(fixtures, 'openapi-invalid.json'), '-o', tmpFile],
+          { env: { ...process.env, FORCE_COLOR: '1', NO_COLOR: undefined } },
+        ).catch((error: unknown) => error); // non-zero exit expected (diagnostics fail the run)
+        const content = fs.readFileSync(tmpFile, 'utf-8');
+        // No ANSI escape sequences (ESC, U+001B) may reach a file.
+        expect(content).to.not.include(String.fromCharCode(27));
+        expect(content).to.include("should always have a 'title'");
+      } finally {
+        if (fs.existsSync(tmpFile)) {
+          fs.unlinkSync(tmpFile);
+        }
+      }
+    });
   });
 
   describe('--json-schema-validation option', function () {

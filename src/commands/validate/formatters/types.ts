@@ -7,6 +7,10 @@ export interface FormatterContext {
   // can note when it is only showing a subset. The `diagnostics` it receives
   // are already sorted and capped.
   total: number;
+  // When explicitly `false`, the formatter must not emit ANSI color (e.g. the
+  // output is being written to a file). Otherwise color follows the terminal's
+  // auto-detection (TTY, NO_COLOR, FORCE_COLOR).
+  color?: boolean;
 }
 
 // A formatter renders the (already sorted and capped) diagnostics into the
