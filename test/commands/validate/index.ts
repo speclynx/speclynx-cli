@@ -2,11 +2,9 @@ import { expect } from 'chai';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import os from 'node:os';
 import http from 'node:http';
-import fs from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { AddressInfo } from 'node:net';
 

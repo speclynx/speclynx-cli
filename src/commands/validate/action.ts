@@ -62,6 +62,12 @@ const buildValidationContext = (
 const isFailure = (diagnostic: Diagnostic, threshold: DiagnosticSeverity): boolean =>
   (diagnostic.severity ?? DiagnosticSeverity.Error) <= threshold;
 
+// Remove ANSI SGR escape sequences (e.g. chalk colors) so file output is plain
+// text. Matches ESC[…m — the only sequences the stylish formatter emits. ESC is
+// built from its code point to keep a raw control byte out of the source.
+const ansiSgrPattern = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, 'g');
+const stripAnsi = (text: string): string => text.replace(ansiSgrPattern, '');
+
 const action = async (source: string, opts: ValidateActionOptions): Promise<void> => {
   // Lazily imported (like apidom-ls below) so other commands don't pay the cost.
   const [{ url, readFile }, { default: FileResolver }, { default: HTTPResolverAxios }] =
@@ -120,7 +126,12 @@ const action = async (source: string, opts: ValidateActionOptions): Promise<void
   // Refuse to overwrite the input document with the diagnostics report — that
   // would silently destroy the user's API definition. Checked up front, before
   // the heavy apidom-ls import, so it fails fast.
-  if (opts.output && path.resolve(opts.output) === resolvedPath) {
+  if (
+    opts.output &&
+    scheme !== 'http' &&
+    scheme !== 'https' &&
+    path.resolve(opts.output) === fileURLToPath(fileURI)
+  ) {
     process.stderr.write('Error: --output path must differ from the input file\n');
     process.exitCode = 1;
     return;
@@ -208,20 +219,17 @@ const action = async (source: string, opts: ValidateActionOptions): Promise<void
 
     // Render via the selected formatter. Formatted output goes to stdout by
     // default (stderr is reserved for hard errors), so `--format` is
-    // stream-consistent; -o/--output redirects it to a file instead. When
-    // writing to a file, disable color so the report never contains ANSI escapes
-    // regardless of the terminal (chalk keys off process.stdout, not the file).
+    // stream-consistent; -o/--output redirects it to a file instead.
     // --json is shorthand for --format json and wins if both are given.
     const format = opts.json ? 'json' : (opts.format ?? defaultFormat);
     const formatter = formatters[format] ?? formatters[defaultFormat];
-    const rendered = `${formatter(reported, {
-      path: source,
-      total: diagnostics.length,
-      ...(opts.output ? { color: false } : {}),
-    })}\n`;
+    const rendered = `${formatter(reported, { path: source, total: diagnostics.length })}\n`;
 
     if (opts.output) {
-      fs.writeFileSync(path.resolve(opts.output), rendered, 'utf-8');
+      // Strip ANSI at the single write site so file reports are always plain
+      // text: chalk colors based on process.stdout's TTY, unaware the bytes are
+      // being written to a file. Formatters stay oblivious to their destination.
+      fs.writeFileSync(path.resolve(opts.output), stripAnsi(rendered), 'utf-8');
     } else {
       process.stdout.write(rendered);
     }
