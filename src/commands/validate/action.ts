@@ -1,4 +1,5 @@
 import path from 'node:path';
+import fs from 'node:fs';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { DiagnosticSeverity, type Diagnostic } from 'vscode-languageserver-types';
@@ -9,6 +10,7 @@ import { formatters, defaultFormat } from './formatters/index.ts';
 export interface ValidateActionOptions {
   format?: string;
   json?: boolean;
+  output?: string;
   jsonSchemaValidation?: boolean;
   maxProblems?: number;
   failSeverity?: string;
@@ -195,12 +197,19 @@ const action = async (source: string, opts: ValidateActionOptions): Promise<void
         ? sorted.slice(0, opts.maxProblems)
         : sorted;
 
-    // Render via the selected formatter. All formatted output goes to stdout
-    // (stderr is reserved for hard errors), so `--format` is stream-consistent.
+    // Render via the selected formatter. Formatted output goes to stdout by
+    // default (stderr is reserved for hard errors), so `--format` is
+    // stream-consistent; -o/--output redirects it to a file instead.
     // --json is shorthand for --format json and wins if both are given.
     const format = opts.json ? 'json' : (opts.format ?? defaultFormat);
     const formatter = formatters[format] ?? formatters[defaultFormat];
-    process.stdout.write(`${formatter(reported, { path: source, total: diagnostics.length })}\n`);
+    const rendered = `${formatter(reported, { path: source, total: diagnostics.length })}\n`;
+
+    if (opts.output) {
+      fs.writeFileSync(path.resolve(opts.output), rendered, 'utf-8');
+    } else {
+      process.stdout.write(rendered);
+    }
 
     // Set the exit code and let the process exit naturally. Calling process.exit()
     // here would terminate before an async (piped) stdout write drains, truncating

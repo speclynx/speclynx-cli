@@ -1,6 +1,8 @@
 import { expect } from 'chai';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import os from 'node:os';
 import http from 'node:http';
@@ -135,6 +137,54 @@ describe('speclynx validate', function () {
       ]);
       expect(code).to.not.equal(0);
       expect(stderr).to.include('Allowed choices are stylish, json');
+    });
+  });
+
+  describe('--output option', function () {
+    it('should write the report to a file instead of stdout', async function () {
+      const tmpFile = path.join(os.tmpdir(), `speclynx-validate-test-${Date.now()}.txt`);
+      try {
+        const { stdout } = await run([path.join(sharedFixtures, 'openapi.json'), '-o', tmpFile]);
+        expect(stdout).to.equal('');
+        const content = fs.readFileSync(tmpFile, 'utf-8');
+        expect(content).to.include('No problems found');
+      } finally {
+        if (fs.existsSync(tmpFile)) {
+          fs.unlinkSync(tmpFile);
+        }
+      }
+    });
+
+    it('should write JSON diagnostics to a file without affecting the exit code', async function () {
+      const tmpFile = path.join(os.tmpdir(), `speclynx-validate-test-${Date.now()}.json`);
+      try {
+        const { stdout, code } = await runExpectFailure([
+          path.join(fixtures, 'openapi-invalid.json'),
+          '--format',
+          'json',
+          '--output',
+          tmpFile,
+        ]);
+        expect(code).to.not.equal(0);
+        expect(stdout).to.equal('');
+        const diagnostics = JSON.parse(fs.readFileSync(tmpFile, 'utf-8'));
+        expect(diagnostics).to.be.an('array').that.is.not.empty;
+      } finally {
+        if (fs.existsSync(tmpFile)) {
+          fs.unlinkSync(tmpFile);
+        }
+      }
+    });
+
+    it('should fail when the output file cannot be written', async function () {
+      const badPath = path.join(os.tmpdir(), `speclynx-validate-missing-${Date.now()}`, 'out.json');
+      const { stderr, code } = await runExpectFailure([
+        path.join(sharedFixtures, 'openapi.json'),
+        '-o',
+        badPath,
+      ]);
+      expect(code).to.not.equal(0);
+      expect(stderr).to.include('Error:');
     });
   });
 

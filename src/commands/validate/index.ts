@@ -23,6 +23,7 @@ command
       .default(defaultFormat),
   )
   .option('--json', 'shorthand for --format json')
+  .option('-o, --output <file>', 'write diagnostics to file instead of stdout')
   .option('--json-schema-validation', 'enable JSON Schema (AJV) validation')
   .option('--max-problems <n>', 'maximum number of problems to report', parseMaxProblems)
   .addOption(
