@@ -67,7 +67,7 @@
   "dependencies": {
     "@babel/runtime-corejs3": "^8.0.0",
     "@speclynx/apidom-core": "^5.0.1",
-    "@speclynx/apidom-ls": "^2.11.5",
+    "@speclynx/apidom-ls": "^2.11.6",
     "@speclynx/apidom-overlay": "^5.0.1",
     "@speclynx/apidom-reference": "^5.0.1",
     "chalk": "^5.6.2",
