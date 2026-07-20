@@ -2,6 +2,7 @@ import { expect } from 'chai';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import path from 'node:path';
+import os from 'node:os';
 import http from 'node:http';
 import fs from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -342,6 +343,20 @@ describe('speclynx validate', function () {
       const single = triple.replace(/^file:\/\//, 'file:');
       const { stdout } = await run([single]);
       expect(stdout).to.include('No problems found');
+    });
+
+    it('should accept a dotfile basename', async function () {
+      // A leading-dot basename (.openapi.json) is a valid local path that the file
+      // resolver's allow-list must still match — a plain '*' glob would not.
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'speclynx-'));
+      const dotfile = path.join(dir, '.openapi.json');
+      fs.copyFileSync(path.join(sharedFixtures, 'openapi.json'), dotfile);
+      try {
+        const { stdout } = await run([dotfile]);
+        expect(stdout).to.include('No problems found');
+      } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
     });
 
     it('should resolve a relative path against the cwd, not the document', async function () {

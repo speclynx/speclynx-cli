@@ -93,14 +93,16 @@ const action = async (source: string, opts: ValidateActionOptions): Promise<void
   // Read up front so a bad path/URL fails before the multi-second apidom-ls import.
   // Resolvers are passed explicitly rather than inherited from apidom-reference's
   // mutable global options, so the CLI's file access and network egress policy live
-  // here. fileAllowList: ['*'] lifts the file resolver's deny-all; the HTTP resolver
-  // has no allow-list and always accepts URLs.
+  // here. The /.*/ allow-list lifts the file resolver's deny-all for any local path
+  // — a glob like '*' would miss dotfile basenames (.openapi.yaml), since picomatch
+  // does not match a leading dot without dot:true. The HTTP resolver has no
+  // allow-list and always accepts URLs.
   let content: string;
   try {
     const data = await readFile(fileURI, {
       resolve: {
         resolvers: [
-          new FileResolver({ fileAllowList: ['*'] }),
+          new FileResolver({ fileAllowList: [/.*/] }),
           new HTTPResolverAxios({ timeout: 5000, redirects: 5, withCredentials: false }),
         ],
       },
