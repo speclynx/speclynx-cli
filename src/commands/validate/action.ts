@@ -1,6 +1,5 @@
 import path from 'node:path';
-import fs from 'node:fs';
-import { pathToFileURL } from 'node:url';
+import { pathToFileURL, fileURLToPath } from 'node:url';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { DiagnosticSeverity, type Diagnostic } from 'vscode-languageserver-types';
 import type { ValidationContext } from '@speclynx/apidom-ls';
@@ -61,14 +60,52 @@ const buildValidationContext = (
 const isFailure = (diagnostic: Diagnostic, threshold: DiagnosticSeverity): boolean =>
   (diagnostic.severity ?? DiagnosticSeverity.Error) <= threshold;
 
-const action = async (filePath: string, opts: ValidateActionOptions): Promise<void> => {
-  // Read the input up front so a bad path fails fast, before paying the
-  // multi-second apidom-ls import below.
-  let resolvedPath: string;
+const action = async (source: string, opts: ValidateActionOptions): Promise<void> => {
+  // Lazily imported (like apidom-ls below) so other commands don't pay the cost.
+  const [{ url, readFile }, { default: FileResolver }, { default: HTTPResolverAxios }] =
+    await Promise.all([
+      import('@speclynx/apidom-reference'),
+      import('@speclynx/apidom-reference/resolve/resolvers/file'),
+      import('@speclynx/apidom-reference/resolve/resolvers/http-axios'),
+    ]);
+
+  // Resolve the input to a canonical URI. http(s) URLs pass through untouched. A
+  // file: URL is round-tripped through fileURLToPath so every legal form — single-
+  // slash (file:/x), triple-slash, and //localhost/ — normalizes to the same
+  // file:///x. Anything else is a filesystem path, made absolute. Only these three
+  // schemes are treated as URIs, so a relative filename that happens to contain a
+  // colon (draft:v1.json) is read as a path rather than mistaken for a scheme.
+  //
+  // This canonicalization is not for readFile (it sanitizes its own argument) but
+  // for fileURI's second role as the baseURI apidom-ls uses verbatim to resolve
+  // relative external $refs — where a raw Windows path throws ERR_INVALID_URL and a
+  // relative path resolves against the filesystem root instead of the document.
+  const scheme = url.getProtocol(source);
+  let fileURI: string;
+  if (scheme === 'http' || scheme === 'https') {
+    fileURI = source;
+  } else if (scheme === 'file') {
+    fileURI = pathToFileURL(fileURLToPath(source)).href;
+  } else {
+    fileURI = pathToFileURL(path.resolve(source)).href;
+  }
+
+  // Read up front so a bad path/URL fails before the multi-second apidom-ls import.
+  // Resolvers are passed explicitly rather than inherited from apidom-reference's
+  // mutable global options, so the CLI's file access and network egress policy live
+  // here. fileAllowList: ['*'] lifts the file resolver's deny-all; the HTTP resolver
+  // has no allow-list and always accepts URLs.
   let content: string;
   try {
-    resolvedPath = path.resolve(filePath);
-    content = fs.readFileSync(resolvedPath, 'utf-8');
+    const data = await readFile(fileURI, {
+      resolve: {
+        resolvers: [
+          new FileResolver({ fileAllowList: ['*'] }),
+          new HTTPResolverAxios({ timeout: 5000, redirects: 5, withCredentials: false }),
+        ],
+      },
+    });
+    content = data.toString('utf-8');
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     process.stderr.write(`Error: ${message}\n`);
@@ -130,8 +167,9 @@ const action = async (filePath: string, opts: ValidateActionOptions): Promise<vo
   });
 
   try {
-    const languageId = /\.ya?ml$/i.test(resolvedPath) ? 'yaml' : 'json';
-    const fileURI = pathToFileURL(resolvedPath).href;
+    // Detect YAML by extension, tolerating a URL query string or fragment
+    // (e.g. https://host/spec.yaml?v=1). Everything else is treated as JSON.
+    const languageId = /\.ya?ml(?:[?#]|$)/i.test(fileURI) ? 'yaml' : 'json';
     const document = TextDocument.create(fileURI, languageId, 0, content);
 
     const validationContext = buildValidationContext(opts, fileURI);
@@ -160,7 +198,7 @@ const action = async (filePath: string, opts: ValidateActionOptions): Promise<vo
     // --json is shorthand for --format json and wins if both are given.
     const format = opts.json ? 'json' : (opts.format ?? defaultFormat);
     const formatter = formatters[format] ?? formatters[defaultFormat];
-    process.stdout.write(`${formatter(reported, { path: filePath, total: diagnostics.length })}\n`);
+    process.stdout.write(`${formatter(reported, { path: source, total: diagnostics.length })}\n`);
 
     // Set the exit code and let the process exit naturally. Calling process.exit()
     // here would terminate before an async (piped) stdout write drains, truncating

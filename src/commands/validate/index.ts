@@ -16,7 +16,7 @@ const command = new Command('validate');
 
 command
   .description('Validate and lint an API definition (OpenAPI, AsyncAPI, Arazzo, Overlay)')
-  .argument('<file>', 'path to the API document (JSON or YAML)')
+  .argument('<uri>', 'path or URL to the API document (JSON or YAML)')
   .addOption(
     new Option('-f, --format <format>', 'output format for diagnostics')
       .choices(formatChoices)
