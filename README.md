@@ -207,20 +207,20 @@ Validate and lint an API definition, powered by the [ApiDOM Language Service](ht
 By default, `validate` runs three kinds of checks:
 
 - **Semantic validation** — checks the document against the *meaning* of its specification, not just its JSON/YAML syntax: required fields are present, values have the correct types, and objects are shaped as the spec requires.
-- **Reference validation** — checks that every `$ref` resolves to something that actually exists.
+- **Reference validation** — checks that every local (`#/...`) `$ref` resolves to something that actually exists.
 - **Semantic linting** — applies style and best-practice rules on top of validation (for example, flagging an empty `enum`).
 
 JSON Schema (AJV) validation is an additional opt-in layer, enabled with `--json-schema-validation`. It validates the document against the official JSON Schema for its specification and covers OpenAPI 2/3.0/3.1, AsyncAPI 2.x, Arazzo, and Overlay.
 
 ```
-speclynx validate [options] <file>
+speclynx validate [options] <uri>
 ```
 
 **Arguments:**
 
 | Argument | Description |
 |----------|-------------|
-| `<file>` | Path to the API document (JSON or YAML) |
+| `<uri>` | Path or URL to the API document (JSON or YAML) — a local file path, a `file://` URL, or an `http(s)://` URL |
 
 **Options:**
 
@@ -242,6 +242,12 @@ Validate an OpenAPI document:
 
 ```sh
 speclynx validate openapi.json
+```
+
+Validate a document hosted at a URL:
+
+```sh
+speclynx validate https://example.com/openapi.yaml
 ```
 
 Emit machine-readable diagnostics for further processing:

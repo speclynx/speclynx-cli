@@ -2,7 +2,11 @@ import { expect } from 'chai';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import os from 'node:os';
+import http from 'node:http';
+import fs from 'node:fs';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import type { AddressInfo } from 'node:net';
 
 const execFileAsync = promisify(execFile);
 
@@ -16,15 +20,16 @@ const sharedFixtures = path.resolve(__dirname, '..', '..', 'fixtures');
 // regardless of the runner's TTY/FORCE_COLOR environment.
 const env = { ...process.env, NO_COLOR: '1' };
 
-const run = (args: string[]): Promise<{ stdout: string; stderr: string }> => {
-  return execFileAsync('node', [bin, 'validate', ...args], { env });
+const run = (args: string[], cwd?: string): Promise<{ stdout: string; stderr: string }> => {
+  return execFileAsync('node', [bin, 'validate', ...args], { env, cwd });
 };
 
 const runExpectFailure = async (
   args: string[],
+  cwd?: string,
 ): Promise<{ stdout: string; stderr: string; code: number | null }> => {
   try {
-    await execFileAsync('node', [bin, 'validate', ...args], { env });
+    await execFileAsync('node', [bin, 'validate', ...args], { env, cwd });
     throw new Error('Expected command to fail');
   } catch (error: unknown) {
     const e = error as { stdout: string; stderr: string; code: number | null };
@@ -300,6 +305,115 @@ describe('speclynx validate', function () {
       ]);
       expect(code).to.not.equal(0);
       expect(stdout).to.include('error');
+    });
+  });
+
+  describe('input URIs', function () {
+    // Serve `handler` on an ephemeral loopback port for the duration of `body`,
+    // always closing the server afterward (even if the assertion throws).
+    const withServer = async (
+      handler: http.RequestListener,
+      body: (baseUrl: string) => Promise<void>,
+    ): Promise<void> => {
+      const server = http.createServer(handler);
+      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+      try {
+        const { port } = server.address() as AddressInfo;
+        await body(`http://127.0.0.1:${port}`);
+      } finally {
+        await new Promise<void>((resolve) => server.close(() => resolve()));
+      }
+    };
+
+    it('should accept a file:// URL to a JSON document', async function () {
+      const { stdout } = await run([pathToFileURL(path.join(sharedFixtures, 'openapi.json')).href]);
+      expect(stdout).to.include('No problems found');
+    });
+
+    it('should accept a file:// URL to a YAML document', async function () {
+      // Exercises extension-based languageId detection for the file scheme.
+      const { stdout } = await run([pathToFileURL(path.join(sharedFixtures, 'openapi.yaml')).href]);
+      expect(stdout).to.include('No problems found');
+    });
+
+    it('should accept a single-slash file: URL', async function () {
+      // file:/path (one slash) is a legal but uncommon form; it must normalize to
+      // the same document as the triple-slash form.
+      const triple = pathToFileURL(path.join(sharedFixtures, 'openapi.json')).href;
+      const single = triple.replace(/^file:\/\//, 'file:');
+      const { stdout } = await run([single]);
+      expect(stdout).to.include('No problems found');
+    });
+
+    it('should accept a dotfile basename', async function () {
+      // A leading-dot basename (.openapi.json) is a valid local path that the file
+      // resolver's allow-list must still match — a plain '*' glob would not.
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'speclynx-'));
+      const dotfile = path.join(dir, '.openapi.json');
+      fs.copyFileSync(path.join(sharedFixtures, 'openapi.json'), dotfile);
+      try {
+        const { stdout } = await run([dotfile]);
+        expect(stdout).to.include('No problems found');
+      } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+    });
+
+    it('should resolve a relative path against the cwd, not the document', async function () {
+      // Run from a directory unrelated to the fixture and pass a relative path to
+      // an INVALID document: the non-empty diagnostics prove the bytes at the
+      // relative location were actually read and parsed (a missing or unrelated
+      // file would not produce this document's errors), guarding the bare-path →
+      // absolute file:// URL branch that no absolute-path test hits.
+      const cwd = path.dirname(fixtures);
+      const relative = path.relative(cwd, path.join(fixtures, 'openapi-invalid.yaml'));
+      const { stdout, code } = await runExpectFailure([relative, '--format', 'json'], cwd);
+      expect(code).to.not.equal(0);
+      expect(JSON.parse(stdout)).to.be.an('array').that.is.not.empty;
+    });
+
+    it('should fetch and validate a document over http', async function () {
+      const body = fs.readFileSync(path.join(sharedFixtures, 'openapi.yaml'));
+      await withServer(
+        (_req, res) => {
+          res.writeHead(200, { 'Content-Type': 'application/yaml' });
+          res.end(body);
+        },
+        async (baseUrl) => {
+          const { stdout } = await run([`${baseUrl}/openapi.yaml`]);
+          expect(stdout).to.include('No problems found');
+        },
+      );
+    });
+
+    it('should detect YAML from an http URL carrying a query string', async function () {
+      // The languageId regex has a dedicated branch for a query/fragment suffix;
+      // the URL extension (not the Content-Type) decides how the body is parsed.
+      const body = fs.readFileSync(path.join(sharedFixtures, 'openapi.yaml'));
+      await withServer(
+        (_req, res) => {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(body);
+        },
+        async (baseUrl) => {
+          const { stdout } = await run([`${baseUrl}/openapi.yaml?v=1`]);
+          expect(stdout).to.include('No problems found');
+        },
+      );
+    });
+
+    it('should fail with a clean error when an http URL 404s', async function () {
+      await withServer(
+        (_req, res) => {
+          res.writeHead(404);
+          res.end('not found');
+        },
+        async (baseUrl) => {
+          const { stderr, code } = await runExpectFailure([`${baseUrl}/missing.yaml`]);
+          expect(code).to.not.equal(0);
+          expect(stderr).to.include('Error:');
+        },
+      );
     });
   });
 
