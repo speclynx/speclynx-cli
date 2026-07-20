@@ -33,7 +33,7 @@ TypeScript is type-checked by `tsc` but **never emitted by it**. Babel handles a
 - `test/*.ts` → `test/*.mjs` — compiled during `npm test`
 - `scripts/babel-plugin-add-import-extension.cjs` — custom Babel plugin that rewrites import paths with `.mjs`/`.cjs` extensions
 
-Browserslist targets: `node 16.14` (production), `node 24.10.0` (development).
+Browserslist targets: `node 20` (production), `node 26.3.1` (development).
 
 ## Conventions
 
