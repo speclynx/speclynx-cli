@@ -22,6 +22,16 @@ Messy API specs? Bring order from the command line — **overlay**, **dereferenc
 
 `@speclynx/cli` is part of the [SpecLynx](https://speclynx.com/) ecosystem, built on top of [ApiDOM](https://github.com/speclynx/apidom) and [ApiDOM Language Service](https://github.com/speclynx/apidom-lsp).
 
+## Table of contents
+
+- [Installation](#installation)
+- [Getting help](#getting-help)
+- [Commands](#commands)
+  - [`overlay apply`](#overlay-apply)
+  - [`overlay diff`](#overlay-diff)
+  - [`validate`](#validate)
+- [License](#license)
+
 ## Installation
 
 ```sh
