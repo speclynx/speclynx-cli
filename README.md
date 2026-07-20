@@ -20,7 +20,7 @@ Messy API specs? Bring order from the command line — **overlay**, **dereferenc
 
 <br />
 
-`@speclynx/cli` is part of the [SpecLynx](https://speclynx.com/) ecosystem, built on top of [ApiDOM](https://github.com/speclynx/apidom) and [ApiDOM Language Service](https://github.com/speclynx/apidom-lsp).
+`@speclynx/cli` is part of the [SpecLynx](https://speclynx.com/) ecosystem, built on top of [ApiDOM](https://github.com/speclynx/apidom) and [ApiDOM Language Service](https://speclynx.com/language-service/).
 
 ## Table of contents
 
@@ -195,7 +195,7 @@ speclynx overlay diff openapi-v1.json openapi-v2.json --fail-on-empty
 
 ### `validate`
 
-Validate and lint an API definition, powered by the [ApiDOM Language Service](https://www.npmjs.com/package/@speclynx/apidom-ls). The document type and version are auto-detected from its content.
+Validate and lint an API definition, powered by the [ApiDOM Language Service](https://speclynx.com/language-service/). The document type and version are auto-detected from its content.
 
 **Supported specifications:**
 
