@@ -1,10 +1,10 @@
 import { expect } from 'chai';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import http from 'node:http';
-import fs from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { AddressInfo } from 'node:net';
 
@@ -135,6 +135,117 @@ describe('speclynx validate', function () {
       ]);
       expect(code).to.not.equal(0);
       expect(stderr).to.include('Allowed choices are stylish, json');
+    });
+  });
+
+  describe('--output option', function () {
+    it('should write the report to a file instead of stdout', async function () {
+      const tmpFile = path.join(os.tmpdir(), `speclynx-validate-test-${Date.now()}.txt`);
+      try {
+        const { stdout } = await run([path.join(sharedFixtures, 'openapi.json'), '-o', tmpFile]);
+        expect(stdout).to.equal('');
+        const content = fs.readFileSync(tmpFile, 'utf-8');
+        expect(content).to.include('No problems found');
+      } finally {
+        if (fs.existsSync(tmpFile)) {
+          fs.unlinkSync(tmpFile);
+        }
+      }
+    });
+
+    it('should write JSON diagnostics to a file without affecting the exit code', async function () {
+      const tmpFile = path.join(os.tmpdir(), `speclynx-validate-test-${Date.now()}.json`);
+      try {
+        const { stdout, code } = await runExpectFailure([
+          path.join(fixtures, 'openapi-invalid.json'),
+          '--format',
+          'json',
+          '--output',
+          tmpFile,
+        ]);
+        expect(code).to.not.equal(0);
+        expect(stdout).to.equal('');
+        const diagnostics = JSON.parse(fs.readFileSync(tmpFile, 'utf-8'));
+        expect(diagnostics).to.be.an('array').that.is.not.empty;
+      } finally {
+        if (fs.existsSync(tmpFile)) {
+          fs.unlinkSync(tmpFile);
+        }
+      }
+    });
+
+    it('should fail when the output file cannot be written', async function () {
+      const badPath = path.join(os.tmpdir(), `speclynx-validate-missing-${Date.now()}`, 'out.json');
+      const { stderr, code } = await runExpectFailure([
+        path.join(sharedFixtures, 'openapi.json'),
+        '-o',
+        badPath,
+      ]);
+      expect(code).to.not.equal(0);
+      expect(stderr).to.include('Error:');
+      // The error names the output path that could not be written.
+      expect(stderr).to.include('failed to write');
+      expect(stderr).to.include(badPath);
+    });
+
+    it('should refuse to overwrite the input document and leave it untouched', async function () {
+      const specFile = path.join(os.tmpdir(), `speclynx-validate-input-${Date.now()}.json`);
+      const original = fs.readFileSync(path.join(sharedFixtures, 'openapi.json'), 'utf-8');
+      fs.writeFileSync(specFile, original, 'utf-8');
+      try {
+        const { stderr, code } = await runExpectFailure([specFile, '-o', specFile]);
+        expect(code).to.not.equal(0);
+        expect(stderr).to.include('must differ from the input file');
+        // The input document must be preserved byte-for-byte.
+        expect(fs.readFileSync(specFile, 'utf-8')).to.equal(original);
+      } finally {
+        if (fs.existsSync(specFile)) {
+          fs.unlinkSync(specFile);
+        }
+      }
+    });
+
+    it('should refuse to overwrite the input via a symlink alias', async function () {
+      const specFile = path.join(os.tmpdir(), `speclynx-validate-real-${Date.now()}.json`);
+      const linkFile = path.join(os.tmpdir(), `speclynx-validate-link-${Date.now()}.json`);
+      const original = fs.readFileSync(path.join(sharedFixtures, 'openapi.json'), 'utf-8');
+      fs.writeFileSync(specFile, original, 'utf-8');
+      fs.symlinkSync(specFile, linkFile);
+      try {
+        // -o names a different path (the symlink) than the input, but both
+        // resolve to the same inode — the guard must still refuse.
+        const { stderr, code } = await runExpectFailure([specFile, '-o', linkFile]);
+        expect(code).to.not.equal(0);
+        expect(stderr).to.include('must differ from the input file');
+        expect(fs.readFileSync(specFile, 'utf-8')).to.equal(original);
+      } finally {
+        if (fs.existsSync(linkFile)) {
+          fs.unlinkSync(linkFile);
+        }
+        if (fs.existsSync(specFile)) {
+          fs.unlinkSync(specFile);
+        }
+      }
+    });
+
+    it('should never write ANSI color codes to a file, even under FORCE_COLOR', async function () {
+      const tmpFile = path.join(os.tmpdir(), `speclynx-validate-color-${Date.now()}.txt`);
+      try {
+        // FORCE_COLOR would make chalk emit ANSI on stdout; the file must stay plain.
+        await execFileAsync(
+          'node',
+          [bin, 'validate', path.join(fixtures, 'openapi-invalid.json'), '-o', tmpFile],
+          { env: { ...process.env, FORCE_COLOR: '1', NO_COLOR: undefined } },
+        ).catch((error: unknown) => error); // non-zero exit expected (diagnostics fail the run)
+        const content = fs.readFileSync(tmpFile, 'utf-8');
+        // No ANSI escape sequences (ESC, U+001B) may reach a file.
+        expect(content).to.not.include(String.fromCharCode(27));
+        expect(content).to.include("should always have a 'title'");
+      } finally {
+        if (fs.existsSync(tmpFile)) {
+          fs.unlinkSync(tmpFile);
+        }
+      }
     });
   });
 

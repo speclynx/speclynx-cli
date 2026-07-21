@@ -5,10 +5,12 @@ import { DiagnosticSeverity, type Diagnostic } from 'vscode-languageserver-types
 import type { ValidationContext } from '@speclynx/apidom-ls';
 
 import { formatters, defaultFormat } from './formatters/index.ts';
+import writeReport, { wouldOverwriteInput } from './output.ts';
 
 export interface ValidateActionOptions {
   format?: string;
   json?: boolean;
+  output?: string;
   jsonSchemaValidation?: boolean;
   maxProblems?: number;
   failSeverity?: string;
@@ -115,6 +117,22 @@ const action = async (source: string, opts: ValidateActionOptions): Promise<void
     return;
   }
 
+  // Refuse to overwrite the input document with the diagnostics report — that
+  // would silently destroy the user's API definition. Checked up front, before
+  // the heavy apidom-ls import, so it fails fast. The input was just read, so it
+  // exists on disk; wouldOverwriteInput compares filesystem identity to catch
+  // symlink/hardlink/case-insensitive aliases, not only equal path strings.
+  if (
+    opts.output &&
+    scheme !== 'http' &&
+    scheme !== 'https' &&
+    wouldOverwriteInput(opts.output, fileURLToPath(fileURI))
+  ) {
+    process.stderr.write('Error: --output path must differ from the input file\n');
+    process.exitCode = 1;
+    return;
+  }
+
   // apidom-ls is a heavy dependency (~seconds to import), so it is loaded lazily
   // here rather than at module top level — otherwise every `speclynx` command
   // (overlay, --help, …) would pay the cost even when validation never runs.
@@ -195,12 +213,13 @@ const action = async (source: string, opts: ValidateActionOptions): Promise<void
         ? sorted.slice(0, opts.maxProblems)
         : sorted;
 
-    // Render via the selected formatter. All formatted output goes to stdout
-    // (stderr is reserved for hard errors), so `--format` is stream-consistent.
-    // --json is shorthand for --format json and wins if both are given.
+    // Render via the selected formatter. --json is shorthand for --format json
+    // and wins if both are given. writeReport sends the result to stdout, or to
+    // a file when -o/--output is given (formatters stay oblivious to either).
     const format = opts.json ? 'json' : (opts.format ?? defaultFormat);
     const formatter = formatters[format] ?? formatters[defaultFormat];
-    process.stdout.write(`${formatter(reported, { path: source, total: diagnostics.length })}\n`);
+    const rendered = `${formatter(reported, { path: source, total: diagnostics.length })}\n`;
+    writeReport(rendered, format, opts.output);
 
     // Set the exit code and let the process exit naturally. Calling process.exit()
     // here would terminate before an async (piped) stdout write drains, truncating
