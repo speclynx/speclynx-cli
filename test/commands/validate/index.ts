@@ -183,6 +183,9 @@ describe('speclynx validate', function () {
       ]);
       expect(code).to.not.equal(0);
       expect(stderr).to.include('Error:');
+      // The error names the output path that could not be written.
+      expect(stderr).to.include('failed to write');
+      expect(stderr).to.include(badPath);
     });
 
     it('should refuse to overwrite the input document and leave it untouched', async function () {

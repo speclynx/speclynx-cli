@@ -6,6 +6,7 @@ import { DiagnosticSeverity, type Diagnostic } from 'vscode-languageserver-types
 import type { ValidationContext } from '@speclynx/apidom-ls';
 
 import { formatters, defaultFormat } from './formatters/index.ts';
+import stripAnsi from './strip-ansi.ts';
 
 export interface ValidateActionOptions {
   format?: string;
@@ -61,12 +62,6 @@ const buildValidationContext = (
 // --fail-severity threshold (Error is most severe = smallest numeric value).
 const isFailure = (diagnostic: Diagnostic, threshold: DiagnosticSeverity): boolean =>
   (diagnostic.severity ?? DiagnosticSeverity.Error) <= threshold;
-
-// Remove ANSI SGR escape sequences (e.g. chalk colors) so file output is plain
-// text. Matches ESC[…m — the only sequences the stylish formatter emits. ESC is
-// built from its code point to keep a raw control byte out of the source.
-const ansiSgrPattern = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, 'g');
-const stripAnsi = (text: string): string => text.replace(ansiSgrPattern, '');
 
 const action = async (source: string, opts: ValidateActionOptions): Promise<void> => {
   // Lazily imported (like apidom-ls below) so other commands don't pay the cost.
@@ -226,10 +221,18 @@ const action = async (source: string, opts: ValidateActionOptions): Promise<void
     const rendered = `${formatter(reported, { path: source, total: diagnostics.length })}\n`;
 
     if (opts.output) {
-      // Strip ANSI at the single write site so file reports are always plain
-      // text: chalk colors based on process.stdout's TTY, unaware the bytes are
-      // being written to a file. Formatters stay oblivious to their destination.
-      fs.writeFileSync(path.resolve(opts.output), stripAnsi(rendered), 'utf-8');
+      // Only the stylish formatter emits chalk colors, and it keys them on
+      // process.stdout's TTY state — unaware the bytes are being written to a
+      // file. Strip ANSI so those reports are plain text on disk; json is left
+      // exactly as emitted. Formatters stay oblivious to their destination.
+      const payload = format === 'json' ? rendered : stripAnsi(rendered);
+      const outputPath = path.resolve(opts.output);
+      try {
+        fs.writeFileSync(outputPath, payload, 'utf-8');
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        throw new Error(`failed to write ${outputPath}: ${message}`);
+      }
     } else {
       process.stdout.write(rendered);
     }
