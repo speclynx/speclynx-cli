@@ -1,12 +1,11 @@
 import path from 'node:path';
-import fs from 'node:fs';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { DiagnosticSeverity, type Diagnostic } from 'vscode-languageserver-types';
 import type { ValidationContext } from '@speclynx/apidom-ls';
 
 import { formatters, defaultFormat } from './formatters/index.ts';
-import stripAnsi from './strip-ansi.ts';
+import writeReport from './output.ts';
 
 export interface ValidateActionOptions {
   format?: string;
@@ -212,30 +211,13 @@ const action = async (source: string, opts: ValidateActionOptions): Promise<void
         ? sorted.slice(0, opts.maxProblems)
         : sorted;
 
-    // Render via the selected formatter. Formatted output goes to stdout by
-    // default (stderr is reserved for hard errors), so `--format` is
-    // stream-consistent; -o/--output redirects it to a file instead.
-    // --json is shorthand for --format json and wins if both are given.
+    // Render via the selected formatter. --json is shorthand for --format json
+    // and wins if both are given. writeReport sends the result to stdout, or to
+    // a file when -o/--output is given (formatters stay oblivious to either).
     const format = opts.json ? 'json' : (opts.format ?? defaultFormat);
     const formatter = formatters[format] ?? formatters[defaultFormat];
     const rendered = `${formatter(reported, { path: source, total: diagnostics.length })}\n`;
-
-    if (opts.output) {
-      // Only the stylish formatter emits chalk colors, and it keys them on
-      // process.stdout's TTY state — unaware the bytes are being written to a
-      // file. Strip ANSI so those reports are plain text on disk; json is left
-      // exactly as emitted. Formatters stay oblivious to their destination.
-      const payload = format === 'json' ? rendered : stripAnsi(rendered);
-      const outputPath = path.resolve(opts.output);
-      try {
-        fs.writeFileSync(outputPath, payload, 'utf-8');
-      } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : String(error);
-        throw new Error(`failed to write ${outputPath}: ${message}`);
-      }
-    } else {
-      process.stdout.write(rendered);
-    }
+    writeReport(rendered, format, opts.output);
 
     // Set the exit code and let the process exit naturally. Calling process.exit()
     // here would terminate before an async (piped) stdout write drains, truncating
