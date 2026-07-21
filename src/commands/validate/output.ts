@@ -3,6 +3,36 @@ import fs from 'node:fs';
 
 import stripAnsi from './strip-ansi.ts';
 
+// True when writing to outputPath would clobber the file at inputPath. Resolved
+// path strings are compared first; when the output already exists, filesystem
+// identity (device + inode) is compared too, so a symlink, hard link, or
+// case-insensitive-filesystem alias (OpenAPI.json vs openapi.json) to the input
+// is caught even though the path strings differ. statSync follows symlinks, so
+// an output symlink pointing at the input resolves to the input's inode. When
+// the output does not exist there is nothing on disk to alias, so the string
+// compare is authoritative. ino is only trusted when non-zero (it can be 0 on
+// some Windows/network filesystems, which would otherwise alias every file).
+//
+// Not covered: an output path matching a relative $ref'd sub-document rather
+// than the root — the resolved ref set is not tracked here.
+export const wouldOverwriteInput = (outputPath: string, inputPath: string): boolean => {
+  const resolvedOutput = path.resolve(outputPath);
+  const resolvedInput = path.resolve(inputPath);
+  if (resolvedOutput === resolvedInput) {
+    return true;
+  }
+  try {
+    const outputStat = fs.statSync(resolvedOutput);
+    const inputStat = fs.statSync(resolvedInput);
+    return (
+      outputStat.ino !== 0 && outputStat.dev === inputStat.dev && outputStat.ino === inputStat.ino
+    );
+  } catch {
+    // Output (or input) is absent or not statable — no on-disk alias possible.
+    return false;
+  }
+};
+
 // Write the formatted diagnostics report to its destination. stdout is the
 // default (stderr stays reserved for hard errors); a path from -o/--output
 // redirects it to a file instead.

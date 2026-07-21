@@ -205,6 +205,29 @@ describe('speclynx validate', function () {
       }
     });
 
+    it('should refuse to overwrite the input via a symlink alias', async function () {
+      const specFile = path.join(os.tmpdir(), `speclynx-validate-real-${Date.now()}.json`);
+      const linkFile = path.join(os.tmpdir(), `speclynx-validate-link-${Date.now()}.json`);
+      const original = fs.readFileSync(path.join(sharedFixtures, 'openapi.json'), 'utf-8');
+      fs.writeFileSync(specFile, original, 'utf-8');
+      fs.symlinkSync(specFile, linkFile);
+      try {
+        // -o names a different path (the symlink) than the input, but both
+        // resolve to the same inode — the guard must still refuse.
+        const { stderr, code } = await runExpectFailure([specFile, '-o', linkFile]);
+        expect(code).to.not.equal(0);
+        expect(stderr).to.include('must differ from the input file');
+        expect(fs.readFileSync(specFile, 'utf-8')).to.equal(original);
+      } finally {
+        if (fs.existsSync(linkFile)) {
+          fs.unlinkSync(linkFile);
+        }
+        if (fs.existsSync(specFile)) {
+          fs.unlinkSync(specFile);
+        }
+      }
+    });
+
     it('should never write ANSI color codes to a file, even under FORCE_COLOR', async function () {
       const tmpFile = path.join(os.tmpdir(), `speclynx-validate-color-${Date.now()}.txt`);
       try {

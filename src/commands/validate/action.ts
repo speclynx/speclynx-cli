@@ -5,7 +5,7 @@ import { DiagnosticSeverity, type Diagnostic } from 'vscode-languageserver-types
 import type { ValidationContext } from '@speclynx/apidom-ls';
 
 import { formatters, defaultFormat } from './formatters/index.ts';
-import writeReport from './output.ts';
+import writeReport, { wouldOverwriteInput } from './output.ts';
 
 export interface ValidateActionOptions {
   format?: string;
@@ -119,12 +119,14 @@ const action = async (source: string, opts: ValidateActionOptions): Promise<void
 
   // Refuse to overwrite the input document with the diagnostics report — that
   // would silently destroy the user's API definition. Checked up front, before
-  // the heavy apidom-ls import, so it fails fast.
+  // the heavy apidom-ls import, so it fails fast. The input was just read, so it
+  // exists on disk; wouldOverwriteInput compares filesystem identity to catch
+  // symlink/hardlink/case-insensitive aliases, not only equal path strings.
   if (
     opts.output &&
     scheme !== 'http' &&
     scheme !== 'https' &&
-    path.resolve(opts.output) === fileURLToPath(fileURI)
+    wouldOverwriteInput(opts.output, fileURLToPath(fileURI))
   ) {
     process.stderr.write('Error: --output path must differ from the input file\n');
     process.exitCode = 1;
