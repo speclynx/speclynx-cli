@@ -2,7 +2,7 @@ import path from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { DiagnosticSeverity, type Diagnostic } from 'vscode-languageserver-types';
-import type { ValidationContext } from '@speclynx/apidom-ls';
+import type { ValidationContext } from '@speclynx/api-languageservice';
 
 import { formatters, defaultFormat } from './formatters/index.ts';
 import writeReport, { wouldOverwriteInput } from './output.ts';
@@ -29,7 +29,7 @@ export const failSeverityChoices = Object.keys(failSeverities);
 
 export const defaultFailSeverity = 'error';
 
-// Build a fresh ValidationContext from CLI options. apidom-ls mutates the
+// Build a fresh ValidationContext from CLI options. api-languageservice mutates the
 // context object it receives (e.g. betterAjvErrors), so this must not be shared.
 // This first cut is intentionally opinionated: semantic validation, reference
 // validation, and semantic linting are always on and not exposed as toggles.
@@ -63,7 +63,7 @@ const isFailure = (diagnostic: Diagnostic, threshold: DiagnosticSeverity): boole
   (diagnostic.severity ?? DiagnosticSeverity.Error) <= threshold;
 
 const action = async (source: string, opts: ValidateActionOptions): Promise<void> => {
-  // Lazily imported (like apidom-ls below) so other commands don't pay the cost.
+  // Lazily imported (like api-languageservice below) so other commands don't pay the cost.
   const [{ url, readFile }, { default: FileResolver }, { default: HTTPResolverAxios }] =
     await Promise.all([
       import('@speclynx/apidom-reference'),
@@ -79,7 +79,7 @@ const action = async (source: string, opts: ValidateActionOptions): Promise<void
   // colon (draft:v1.json) is read as a path rather than mistaken for a scheme.
   //
   // This canonicalization is not for readFile (it sanitizes its own argument) but
-  // for fileURI's second role as the baseURI apidom-ls uses verbatim to resolve
+  // for fileURI's second role as the baseURI api-languageservice uses verbatim to resolve
   // relative external $refs — where a raw Windows path throws ERR_INVALID_URL and a
   // relative path resolves against the filesystem root instead of the document.
   const scheme = url.getProtocol(source);
@@ -92,7 +92,7 @@ const action = async (source: string, opts: ValidateActionOptions): Promise<void
     fileURI = pathToFileURL(path.resolve(source)).href;
   }
 
-  // Read up front so a bad path/URL fails before the multi-second apidom-ls import.
+  // Read up front so a bad path/URL fails before the multi-second api-languageservice import.
   // Resolvers are passed explicitly rather than inherited from apidom-reference's
   // mutable global options, so the CLI's file access and network egress policy live
   // here. The /.*/ allow-list lifts the file resolver's deny-all for any local path
@@ -119,7 +119,7 @@ const action = async (source: string, opts: ValidateActionOptions): Promise<void
 
   // Refuse to overwrite the input document with the diagnostics report — that
   // would silently destroy the user's API definition. Checked up front, before
-  // the heavy apidom-ls import, so it fails fast. The input was just read, so it
+  // the heavy api-languageservice import, so it fails fast. The input was just read, so it
   // exists on disk; wouldOverwriteInput compares filesystem identity to catch
   // symlink/hardlink/case-insensitive aliases, not only equal path strings.
   if (
@@ -133,13 +133,13 @@ const action = async (source: string, opts: ValidateActionOptions): Promise<void
     return;
   }
 
-  // apidom-ls is a heavy dependency (~seconds to import), so it is loaded lazily
-  // here rather than at module top level — otherwise every `speclynx` command
-  // (overlay, --help, …) would pay the cost even when validation never runs.
-  // Providers come from the apidom-ls barrel where it exports them (typed public
-  // API). AsyncAPI is the exception: the barrel omits its providers, so they are
-  // pulled from subpaths (untyped — see apidom-ls-asyncapi.d.ts) to let
-  // --json-schema-validation cover AsyncAPI 2.0–2.6. This adds ~50ms on top of
+  // api-languageservice is a heavy dependency (~seconds to import), so it is
+  // loaded lazily here rather than at module top level — otherwise every
+  // `speclynx` command (overlay, --help, …) would pay the cost even when
+  // validation never runs. Providers come from the api-languageservice barrel
+  // where it exports them. AsyncAPI is the exception: the barrel omits its
+  // providers, so they are pulled from subpaths to let --json-schema-validation
+  // cover AsyncAPI 2.0–2.6. This adds ~50ms on top of
   // the multi-second barrel import. Note OpenAPI 2.0/3.0 have no subpath at all,
   // so uniform subpath loading is not possible anyway.
   const [
@@ -159,14 +159,14 @@ const action = async (source: string, opts: ValidateActionOptions): Promise<void
     { Asyncapi25JsonSchemaValidationProvider },
     { Asyncapi26JsonSchemaValidationProvider },
   ] = await Promise.all([
-    import('@speclynx/apidom-ls'),
-    import('@speclynx/apidom-ls/services/validation/providers/asyncapi-20-json-schema'),
-    import('@speclynx/apidom-ls/services/validation/providers/asyncapi-21-json-schema'),
-    import('@speclynx/apidom-ls/services/validation/providers/asyncapi-22-json-schema'),
-    import('@speclynx/apidom-ls/services/validation/providers/asyncapi-23-json-schema'),
-    import('@speclynx/apidom-ls/services/validation/providers/asyncapi-24-json-schema'),
-    import('@speclynx/apidom-ls/services/validation/providers/asyncapi-25-json-schema'),
-    import('@speclynx/apidom-ls/services/validation/providers/asyncapi-26-json-schema'),
+    import('@speclynx/api-languageservice'),
+    import('@speclynx/api-languageservice/services/validation/providers/asyncapi-20-json-schema'),
+    import('@speclynx/api-languageservice/services/validation/providers/asyncapi-21-json-schema'),
+    import('@speclynx/api-languageservice/services/validation/providers/asyncapi-22-json-schema'),
+    import('@speclynx/api-languageservice/services/validation/providers/asyncapi-23-json-schema'),
+    import('@speclynx/api-languageservice/services/validation/providers/asyncapi-24-json-schema'),
+    import('@speclynx/api-languageservice/services/validation/providers/asyncapi-25-json-schema'),
+    import('@speclynx/api-languageservice/services/validation/providers/asyncapi-26-json-schema'),
   ]);
 
   const service = getLanguageService({
