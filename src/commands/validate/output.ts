@@ -53,7 +53,7 @@ const writeReport = (rendered: string, format: string, outputPath?: string): voi
     fs.writeFileSync(absPath, payload, 'utf-8');
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`failed to write ${absPath}: ${message}`);
+    throw new Error(`failed to write ${absPath}: ${message}`, { cause: error });
   }
 };
 
