@@ -81,7 +81,7 @@
     "@babel/helper-plugin-utils": "8.0.1",
     "@babel/plugin-transform-runtime": "8.0.6",
     "@babel/preset-env": "8.0.6",
-    "@babel/preset-typescript": "8.0.1",
+    "@babel/preset-typescript": "8.0.7",
     "@commitlint/cli": "=21.2.3",
     "@commitlint/config-conventional": "=21.2.3",
     "@emnapi/wasi-threads": "2.2.0",
