@@ -134,7 +134,7 @@ describe('speclynx overlay diff', function () {
       expect(JSON.parse(stdout).overlay).to.equal('1.2.0');
     });
 
-    for (const version of ['1.0.0', '1.1.0', '1.2.0']) {
+    for (const version of ['1.1.0', '1.2.0']) {
       it(`should generate an Overlay ${version} document`, async function () {
         const { stdout } = await run([
           path.join(sharedFixtures, 'openapi.json'),
@@ -148,16 +148,52 @@ describe('speclynx overlay diff', function () {
       });
     }
 
-    it('should reject unsupported overlay versions', async function () {
-      const { stderr, code } = await runExpectFailure([
-        path.join(sharedFixtures, 'openapi.json'),
-        path.join(fixtures, 'openapi-after.json'),
-        '--overlay-version',
-        '2.0.0',
-      ]);
-      expect(code).to.not.equal(0);
-      expect(stderr).to.include('Allowed choices are 1.0.0, 1.1.0, 1.2.0');
-    });
+    for (const version of ['1.1.0', '1.2.0']) {
+      it(`should round-trip an Overlay ${version} document through validate and apply`, async function () {
+        const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'speclynx-test-'));
+        const overlayFile = path.join(tmpDir, 'overlay.json');
+        try {
+          await run([
+            path.join(sharedFixtures, 'openapi.json'),
+            path.join(fixtures, 'openapi-after.json'),
+            '--overlay-version',
+            version,
+            '-o',
+            overlayFile,
+          ]);
+
+          const { stdout: report } = await execFileAsync('node', [bin, 'validate', overlayFile]);
+          expect(report).to.include('No problems found');
+
+          // the generated overlay extends the before document, so no target is needed
+          const { stdout: applied } = await execFileAsync('node', [
+            bin,
+            'overlay',
+            'apply',
+            overlayFile,
+          ]);
+          const after = JSON.parse(
+            fs.readFileSync(path.join(fixtures, 'openapi-after.json'), 'utf-8'),
+          );
+          expect(JSON.parse(applied)).to.deep.equal(after);
+        } finally {
+          fs.rmSync(tmpDir, { recursive: true, force: true });
+        }
+      });
+    }
+
+    for (const version of ['1.0.0', '2.0.0']) {
+      it(`should reject unsupported overlay version ${version}`, async function () {
+        const { stderr, code } = await runExpectFailure([
+          path.join(sharedFixtures, 'openapi.json'),
+          path.join(fixtures, 'openapi-after.json'),
+          '--overlay-version',
+          version,
+        ]);
+        expect(code).to.not.equal(0);
+        expect(stderr).to.include('Allowed choices are 1.1.0, 1.2.0');
+      });
+    }
   });
 
   describe('--output option', function () {

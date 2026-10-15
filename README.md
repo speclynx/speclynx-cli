@@ -66,6 +66,8 @@ Apply [Overlay 1.x](https://spec.openapis.org/overlay/v1.2.0.html) documents to 
 - [Overlay 1.1.0](https://spec.openapis.org/overlay/v1.1.0)
 - [Overlay 1.2.0](https://spec.openapis.org/overlay/v1.2.0)
 
+Overlay 1.2.0 Reusable Action References (`$ref: '#/components/actions/<name>'`) are resolved before the actions are applied. Only references within the same overlay document are supported.
+
 The target can be any JSON or YAML document.
 
 ```
@@ -164,7 +166,7 @@ speclynx overlay diff [options] <before> <after>
 |--------|-------------|
 | `-o, --output <file>` | Write result to file instead of stdout |
 | `-f, --format <format>` | Output format: `json` or `yaml` (auto-detected from `<before>` extension) |
-| `--overlay-version <version>` | Overlay version of the generated document: `1.0.0`, `1.1.0`, or `1.2.0` (default: `1.2.0`) |
+| `--overlay-version <version>` | Overlay version of the generated document: `1.1.0` or `1.2.0` (default: `1.2.0`). Overlay 1.0.0 is not supported, because the generated actions rely on 1.1.0 semantics (updating primitive values, concatenating arrays) |
 | `--fail-on-empty` | Exit with code 1 if the documents are identical |
 
 #### Examples
