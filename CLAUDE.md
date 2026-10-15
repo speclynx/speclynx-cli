@@ -9,9 +9,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build & Development Commands
 
 ```bash
-npm run build          # clean + build ES modules (.mjs) + CommonJS (.cjs)
+npm run build          # clean + build ES modules (.mjs)
 npm run build:es       # build ES modules only
-npm run build:cjs      # build CommonJS only
 npm run lint           # run ESLint
 npm run lint:fix       # run ESLint with auto-fix
 npm run typescript:check-types  # type-check without emitting
@@ -29,9 +28,9 @@ npm run clean          # remove compiled artifacts
 ## Build Pipeline
 
 TypeScript is type-checked by `tsc` but **never emitted by it**. Babel handles all compilation:
-- `src/*.ts` → `src/*.mjs` (ES modules) and `src/*.cjs` (CommonJS) — compiled output lives alongside source
+- `src/*.ts` → `src/*.mjs` (ES modules) — compiled output lives alongside source. There is no CommonJS build: the package is ESM-only (`"type": "module"`, no `main`/`exports`)
 - `test/*.ts` → `test/*.mjs` — compiled during `npm test`
-- `scripts/babel-plugin-add-import-extension.cjs` — custom Babel plugin that rewrites import paths with `.mjs`/`.cjs` extensions
+- `scripts/babel-plugin-add-import-extension.cjs` — custom Babel plugin that rewrites import paths with `.mjs` extensions
 
 Browserslist targets: `node 20` (production), `node 26.3.1` (development).
 

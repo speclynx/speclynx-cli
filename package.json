@@ -34,9 +34,8 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "build": "npm run clean && npm run build:es && npm run build:cjs",
+    "build": "npm run clean && npm run build:es",
     "build:es": "cross-env BABEL_ENV=es babel src --out-dir src --extensions '.ts' --out-file-extension '.mjs'",
-    "build:cjs": "cross-env BABEL_ENV=cjs babel src --out-dir src --extensions '.ts' --out-file-extension '.cjs'",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "clean": "rimraf --glob 'src/**/*.mjs' 'src/**/*.cjs' 'test/**/*.mjs' ./dist",
