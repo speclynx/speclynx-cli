@@ -58,12 +58,13 @@ speclynx validate --help         # show validate options
 
 ### `overlay apply`
 
-Apply [Overlay 1.x](https://spec.openapis.org/overlay/v1.1.0.html) documents to API definitions.
+Apply [Overlay 1.x](https://spec.openapis.org/overlay/v1.2.0.html) documents to API definitions.
 
 **Supported Overlay versions:**
 
 - [Overlay 1.0.0](https://spec.openapis.org/overlay/v1.0.0)
 - [Overlay 1.1.0](https://spec.openapis.org/overlay/v1.1.0)
+- [Overlay 1.2.0](https://spec.openapis.org/overlay/v1.2.0)
 
 The target can be any JSON or YAML document.
 
@@ -144,7 +145,7 @@ Overlay: overlay.json -> openapi.json
 
 ### `overlay diff`
 
-Generate an [Overlay 1.x](https://spec.openapis.org/overlay/v1.1.0.html) document from the diff of two API documents. The produced overlay, when applied to `<before>`, yields `<after>`.
+Generate an [Overlay 1.x](https://spec.openapis.org/overlay/v1.2.0.html) document from the diff of two API documents. The produced overlay, when applied to `<before>`, yields `<after>`. The generated document declares Overlay 1.2.0 by default; use `--overlay-version` to target an older version.
 
 ```
 speclynx overlay diff [options] <before> <after>
@@ -163,6 +164,7 @@ speclynx overlay diff [options] <before> <after>
 |--------|-------------|
 | `-o, --output <file>` | Write result to file instead of stdout |
 | `-f, --format <format>` | Output format: `json` or `yaml` (auto-detected from `<before>` extension) |
+| `--overlay-version <version>` | Overlay version of the generated document: `1.0.0`, `1.1.0`, or `1.2.0` (default: `1.2.0`) |
 | `--fail-on-empty` | Exit with code 1 if the documents are identical |
 
 #### Examples
@@ -183,6 +185,12 @@ Force JSON output regardless of input format:
 
 ```sh
 speclynx overlay diff openapi-v1.yaml openapi-v2.yaml -f json
+```
+
+Generate an Overlay 1.1.0 document (for tools that don't support 1.2.0 yet):
+
+```sh
+speclynx overlay diff openapi-v1.json openapi-v2.json --overlay-version 1.1.0
 ```
 
 Fail when the two documents are identical (useful in CI):

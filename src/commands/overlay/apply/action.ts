@@ -56,7 +56,7 @@ const action = async (
           path.resolve(additionalOverlay),
           defaultApplyOverlayOptions.reference,
         );
-        applyOverlayApiDOM(overlayParseResult, parseResult, additionalApplyOpts);
+        await applyOverlayApiDOM(overlayParseResult, parseResult, additionalApplyOpts);
 
         if (opts.verbose) {
           printTrace(additionalOverlay, '(previous result)', additionalTrace);

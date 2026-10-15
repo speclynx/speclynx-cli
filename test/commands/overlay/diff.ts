@@ -125,6 +125,41 @@ describe('speclynx overlay diff', function () {
     });
   });
 
+  describe('--overlay-version option', function () {
+    it('should generate an Overlay 1.2.0 document by default', async function () {
+      const { stdout } = await run([
+        path.join(sharedFixtures, 'openapi.json'),
+        path.join(fixtures, 'openapi-after.json'),
+      ]);
+      expect(JSON.parse(stdout).overlay).to.equal('1.2.0');
+    });
+
+    for (const version of ['1.0.0', '1.1.0', '1.2.0']) {
+      it(`should generate an Overlay ${version} document`, async function () {
+        const { stdout } = await run([
+          path.join(sharedFixtures, 'openapi.json'),
+          path.join(fixtures, 'openapi-after.json'),
+          '--overlay-version',
+          version,
+        ]);
+        const result = JSON.parse(stdout);
+        expect(result.overlay).to.equal(version);
+        expect(result.actions).to.be.an('array').with.length.greaterThan(0);
+      });
+    }
+
+    it('should reject unsupported overlay versions', async function () {
+      const { stderr, code } = await runExpectFailure([
+        path.join(sharedFixtures, 'openapi.json'),
+        path.join(fixtures, 'openapi-after.json'),
+        '--overlay-version',
+        '2.0.0',
+      ]);
+      expect(code).to.not.equal(0);
+      expect(stderr).to.include('Allowed choices are 1.0.0, 1.1.0, 1.2.0');
+    });
+  });
+
   describe('--output option', function () {
     it('should write result to file', async function () {
       const tmpFile = path.join(os.tmpdir(), `speclynx-test-${Date.now()}.json`);

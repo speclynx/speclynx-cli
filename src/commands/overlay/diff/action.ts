@@ -6,6 +6,7 @@ import { diffOverlay } from '@speclynx/apidom-overlay';
 export interface DiffActionOptions {
   output?: string;
   format?: string;
+  overlayVersion?: string;
   failOnEmpty?: boolean;
 }
 
@@ -15,7 +16,9 @@ const action = async (
   opts: DiffActionOptions,
 ): Promise<void> => {
   try {
-    const overlay = await diffOverlay(path.resolve(beforePath), path.resolve(afterPath));
+    const overlay = await diffOverlay(path.resolve(beforePath), path.resolve(afterPath), {
+      overlay: opts.overlayVersion,
+    });
 
     const overlayValue = toValue(overlay) as Record<string, unknown>;
     if (

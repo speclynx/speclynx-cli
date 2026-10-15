@@ -15,6 +15,11 @@ command
       'output format (auto-detected from before extension)',
     ).choices(['json', 'yaml']),
   )
+  .addOption(
+    new Option('--overlay-version <version>', 'Overlay version of the generated document')
+      .choices(['1.0.0', '1.1.0', '1.2.0'])
+      .default('1.2.0'),
+  )
   .option('--fail-on-empty', 'exit with code 1 if the documents are identical')
   .action(action);
 
