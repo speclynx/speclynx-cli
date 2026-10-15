@@ -1,0 +1,10 @@
+overlay: "1.1.0"
+info:
+  title: Copy title to summary
+  version: "1.0.0"
+actions:
+  - target: "$.info"
+    update:
+      summary: placeholder
+  - target: "$.info.summary"
+    copy: "$.info.title"

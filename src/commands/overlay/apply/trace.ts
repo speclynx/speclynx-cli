@@ -15,7 +15,11 @@ const printTrace = (overlayFile: string, targetFile: string, trace: OverlayTrace
     }
   }
 
-  stderr.write(`  ${trace.message}\n\n`);
+  // on failure the message repeats the failed action's error, which is already printed above
+  if (!trace.failed) {
+    stderr.write(`  ${trace.message}\n`);
+  }
+  stderr.write('\n');
 };
 
 export default printTrace;

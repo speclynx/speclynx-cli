@@ -156,6 +156,72 @@ describe('speclynx overlay apply', function () {
     });
   });
 
+  describe('Overlay 1.2.0 reusable actions', function () {
+    it('should apply reusable action references alongside inline actions', async function () {
+      const { stdout } = await run([
+        path.join(fixtures, 'overlay-reusable.yaml'),
+        path.join(sharedFixtures, 'openapi.json'),
+      ]);
+      const result = JSON.parse(stdout);
+      expect(result.info.description).to.equal('Added by reusable action');
+      expect(result.info['x-reviewed']).to.equal(true);
+      expect(result.info['x-inline']).to.equal(true);
+    });
+
+    it('should apply reusable action references in additional overlays', async function () {
+      const { stdout } = await run([
+        path.join(fixtures, 'overlay-title.json'),
+        path.join(sharedFixtures, 'openapi.json'),
+        '--overlay',
+        path.join(fixtures, 'overlay-reusable.yaml'),
+      ]);
+      const result = JSON.parse(stdout);
+      expect(result.info.title).to.equal('Updated Title');
+      expect(result.info.description).to.equal('Added by reusable action');
+      expect(result.info['x-reviewed']).to.equal(true);
+    });
+
+    for (const position of ['first', 'additional']) {
+      it(`should fail on an unresolvable reference in the ${position} overlay`, async function () {
+        const unresolved = path.join(fixtures, 'overlay-reusable-unresolved.yaml');
+        const args =
+          position === 'first'
+            ? [unresolved, path.join(sharedFixtures, 'openapi.json')]
+            : [
+                path.join(fixtures, 'overlay.json'),
+                path.join(sharedFixtures, 'openapi.json'),
+                '--overlay',
+                unresolved,
+              ];
+        const { stdout, stderr, code } = await runExpectFailure(args);
+        expect(code).to.not.equal(0);
+        expect(stdout).to.equal('');
+        expect(stderr).to.include('"#/components/actions/missing" cannot be resolved');
+      });
+    }
+
+    it('should fail in strict mode when a referenced action matches zero nodes', async function () {
+      const { stderr, code } = await runExpectFailure([
+        path.join(fixtures, 'overlay-reusable-nomatch.yaml'),
+        path.join(sharedFixtures, 'openapi.json'),
+        '--strict',
+      ]);
+      expect(code).to.not.equal(0);
+      expect(stderr).to.include('Action target "$.info.contact" matched zero nodes');
+    });
+  });
+
+  describe('Overlay 1.1.0 copy action', function () {
+    it('should copy a value to the target', async function () {
+      const { stdout } = await run([
+        path.join(fixtures, 'overlay-copy.yaml'),
+        path.join(sharedFixtures, 'openapi.json'),
+      ]);
+      const result = JSON.parse(stdout);
+      expect(result.info.summary).to.equal('My API');
+    });
+  });
+
   describe('--strict option', function () {
     it('should succeed when all targets match', async function () {
       const { stdout } = await run([
@@ -201,6 +267,53 @@ describe('speclynx overlay apply', function () {
       expect(stderr).to.include('update');
       expect(stderr).to.include('$.info');
       expect(stderr).to.include('Overlay was successfully applied');
+    });
+
+    it('should trace every action of a reusable actions overlay', async function () {
+      const { stderr } = await run([
+        path.join(fixtures, 'overlay-reusable.yaml'),
+        path.join(sharedFixtures, 'openapi.json'),
+        '--verbose',
+      ]);
+      expect(stderr.match(/\[ok\] update \$\.info \(1 matches\)/g)).to.have.length(3);
+    });
+
+    it('should trace copy actions', async function () {
+      const { stderr } = await run([
+        path.join(fixtures, 'overlay-copy.yaml'),
+        path.join(sharedFixtures, 'openapi.json'),
+        '--verbose',
+      ]);
+      expect(stderr).to.include('[ok] copy $.info.summary (1 matches)');
+    });
+
+    it('should print the trace up to the failing action', async function () {
+      const { stderr, code } = await runExpectFailure([
+        path.join(fixtures, 'overlay-nomatch.json'),
+        path.join(sharedFixtures, 'openapi.json'),
+        '--strict',
+        '--verbose',
+      ]);
+      expect(code).to.not.equal(0);
+      expect(stderr).to.include('Overlay: overlay-nomatch.json -> openapi.json');
+      expect(stderr).to.include('[FAIL] noop $.info.contact.email (0 matches)');
+      expect(stderr).to.not.include('Overlay was successfully applied');
+      expect(stderr).to.include('Error:');
+    });
+
+    it('should print the trace of a failing additional overlay', async function () {
+      const { stderr, code } = await runExpectFailure([
+        path.join(fixtures, 'overlay.json'),
+        path.join(sharedFixtures, 'openapi.json'),
+        '--overlay',
+        path.join(fixtures, 'overlay-reusable-nomatch.yaml'),
+        '--strict',
+        '--verbose',
+      ]);
+      expect(code).to.not.equal(0);
+      expect(stderr).to.include('Overlay: overlay.json -> openapi.json');
+      expect(stderr).to.include('Overlay: overlay-reusable-nomatch.yaml -> (previous result)');
+      expect(stderr).to.include('[FAIL] noop $.info.contact (0 matches)');
     });
 
     it('should not print trace without --verbose', async function () {
