@@ -1,7 +1,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import { toJSON, toYAML, toValue } from '@speclynx/apidom-core';
-import { parse } from '@speclynx/apidom-reference';
+import { parse, url } from '@speclynx/apidom-reference';
 import {
   applyOverlay,
   applyOverlayApiDOM,
@@ -24,6 +24,9 @@ const action = async (
   targetPath: string | undefined,
   opts: ApplyActionOptions,
 ): Promise<void> => {
+  // trace of the overlay currently being applied; printed on failure when verbose
+  let current: { overlayFile: string; targetLabel: string; trace: OverlayTrace } | undefined;
+
   try {
     const trace = {} as OverlayTrace;
     const applyOpts = {
@@ -33,6 +36,7 @@ const action = async (
     };
 
     // apply first overlay — resolves target from arg or extends field
+    current = { overlayFile: overlayPath, targetLabel: targetPath ?? '(extends)', trace };
     const parseResult = await applyOverlay(
       path.resolve(overlayPath),
       targetPath ? path.resolve(targetPath) : undefined,
@@ -40,26 +44,34 @@ const action = async (
     );
 
     if (opts.verbose) {
-      printTrace(overlayPath, targetPath ?? '(extends)', trace);
+      printTrace(current.overlayFile, current.targetLabel, trace);
     }
 
     // apply additional overlays sequentially (in-memory, since target is already parsed)
     if (opts.overlay && opts.overlay.length > 0) {
       for (const additionalOverlay of opts.overlay) {
+        const additionalOverlayURI = path.resolve(additionalOverlay);
         const additionalTrace = {} as OverlayTrace;
         const additionalApplyOpts = {
           immutable: false,
           ...(opts.strict ? { strict: true } : {}),
           ...(opts.verbose ? { trace: additionalTrace } : {}),
+          // resolve reusable action references relative to the overlay, like applyOverlay does
+          reference: { resolve: { baseURI: url.sanitize(additionalOverlayURI) } },
+        };
+        current = {
+          overlayFile: additionalOverlay,
+          targetLabel: '(previous result)',
+          trace: additionalTrace,
         };
         const overlayParseResult = await parse(
-          path.resolve(additionalOverlay),
+          additionalOverlayURI,
           defaultApplyOverlayOptions.reference,
         );
         await applyOverlayApiDOM(overlayParseResult, parseResult, additionalApplyOpts);
 
         if (opts.verbose) {
-          printTrace(additionalOverlay, '(previous result)', additionalTrace);
+          printTrace(current.overlayFile, current.targetLabel, additionalTrace);
         }
       }
     }
@@ -85,6 +97,10 @@ const action = async (
       process.stdout.write('\n');
     }
   } catch (error: unknown) {
+    // the trace is populated up to the failing action, so it shows where applying stopped
+    if (opts.verbose && current && Array.isArray(current.trace.actions)) {
+      printTrace(current.overlayFile, current.targetLabel, current.trace);
+    }
     const message = error instanceof Error ? error.message : String(error);
     process.stderr.write(`Error: ${message}\n`);
     process.exit(1);

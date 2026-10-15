@@ -410,6 +410,20 @@ describe('speclynx validate', function () {
       expect(stdout).to.include('error');
     });
 
+    it('should report no problems for a valid Overlay 1.2.0 document', async function () {
+      const { stdout } = await run([path.join(fixtures, 'overlay-1-2.yaml')]);
+      expect(stdout).to.include('No problems found');
+    });
+
+    it('should validate an invalid Overlay 1.2.0 document', async function () {
+      const { stdout, code } = await runExpectFailure([
+        path.join(fixtures, 'overlay-1-2-invalid.yaml'),
+      ]);
+      expect(code).to.not.equal(0);
+      expect(stdout).to.include('target must not be defined in Reusable Action fields');
+      expect(stdout).to.include('local reference not found');
+    });
+
     it('should validate an invalid Overlay 1.x document', async function () {
       const { stdout, code } = await runExpectFailure([
         path.join(fixtures, 'overlay-invalid.yaml'),

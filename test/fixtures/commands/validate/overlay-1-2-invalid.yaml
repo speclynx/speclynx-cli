@@ -1,0 +1,14 @@
+overlay: "1.2.0"
+info:
+  title: Invalid Overlay 1.2.0
+  version: "1.0.0"
+components:
+  actions:
+    misplacedTarget:
+      fields:
+        target: "$.info"
+        update:
+          description: target is not allowed in fields
+actions:
+  - $ref: "#/components/actions/missing"
+    target: "$.info"

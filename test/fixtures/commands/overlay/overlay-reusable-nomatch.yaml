@@ -1,0 +1,13 @@
+overlay: "1.2.0"
+info:
+  title: Reusable action without match
+  version: "1.0.0"
+components:
+  actions:
+    addEmail:
+      fields:
+        update:
+          email: api@example.com
+actions:
+  - $ref: "#/components/actions/addEmail"
+    target: "$.info.contact"
