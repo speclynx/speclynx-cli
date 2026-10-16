@@ -5,6 +5,7 @@ node_modules/
 isolate-*.log
 .log*
 .claude/
+.mcp.json
 src/**/*.mjs
 src/**/*.cjs
 test/**/*.mjs
