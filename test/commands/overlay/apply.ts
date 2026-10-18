@@ -70,23 +70,28 @@ describe('speclynx overlay apply', function () {
       expect(stdout).to.include('openapi:');
     });
 
-    it('should preserve block and quoted scalars as written', async function () {
-      const tmpFile = path.join(os.tmpdir(), `speclynx-test-${Date.now()}.yaml`);
-      try {
-        await run([
-          path.join(fixtures, 'overlay-style.yaml'),
-          path.join(fixtures, 'openapi-style.yaml'),
-          '-o',
-          tmpFile,
-        ]);
-        const expected = fs.readFileSync(path.join(fixtures, 'openapi-style-after.yaml'), 'utf-8');
-        expect(fs.readFileSync(tmpFile, 'utf-8')).to.equal(expected);
-      } finally {
-        if (fs.existsSync(tmpFile)) {
-          fs.unlinkSync(tmpFile);
+    for (const [lineBreaks, target] of [
+      ['LF', 'openapi-style'],
+      ['CRLF', 'openapi-style-crlf'],
+    ]) {
+      it(`should preserve block and quoted scalars as written with ${lineBreaks} line breaks`, async function () {
+        const tmpFile = path.join(os.tmpdir(), `speclynx-test-${Date.now()}.yaml`);
+        try {
+          await run([
+            path.join(fixtures, 'overlay-style.yaml'),
+            path.join(fixtures, `${target}.yaml`),
+            '-o',
+            tmpFile,
+          ]);
+          const expected = fs.readFileSync(path.join(fixtures, `${target}-after.yaml`), 'utf-8');
+          expect(fs.readFileSync(tmpFile, 'utf-8')).to.equal(expected);
+        } finally {
+          if (fs.existsSync(tmpFile)) {
+            fs.unlinkSync(tmpFile);
+          }
         }
-      }
-    });
+      });
+    }
   });
 
   describe('extends field', function () {
@@ -180,10 +185,8 @@ describe('speclynx overlay apply', function () {
         '--overlay',
         path.join(fixtures, 'overlay-style.yaml'),
       ]);
-      // CRLF line breaks of fixtures checked out on Windows are preserved
-      const output = stdout.replace(/\r\n/g, '\n');
-      expect(output).to.include('      summary: |2-\n\n        Added by overlay.\n');
-      expect(output).to.include("      description: 'Added by the ''overlay'''\n");
+      expect(stdout).to.include('      summary: |2-\n\n        Added by overlay.\n');
+      expect(stdout).to.include("      description: 'Added by the ''overlay'''\n");
     });
   });
 
