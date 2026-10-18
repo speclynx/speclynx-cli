@@ -66,9 +66,9 @@
   "dependencies": {
     "@babel/runtime-corejs3": "^8.0.6",
     "@speclynx/api-languageservice": "^2.14.0",
-    "@speclynx/apidom-core": "^6.0.6",
-    "@speclynx/apidom-overlay": "^6.0.6",
-    "@speclynx/apidom-reference": "^6.0.6",
+    "@speclynx/apidom-core": "^6.1.0",
+    "@speclynx/apidom-overlay": "^6.1.0",
+    "@speclynx/apidom-reference": "^6.1.0",
     "chalk": "^5.6.2",
     "commander": "^14.0.3",
     "vscode-languageserver-textdocument": "^1.0.15",

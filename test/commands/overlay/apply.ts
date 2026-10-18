@@ -69,6 +69,24 @@ describe('speclynx overlay apply', function () {
       expect(stdout.trimStart()).to.not.match(/^\{/);
       expect(stdout).to.include('openapi:');
     });
+
+    it('should preserve block and quoted scalars as written', async function () {
+      const tmpFile = path.join(os.tmpdir(), `speclynx-test-${Date.now()}.yaml`);
+      try {
+        await run([
+          path.join(fixtures, 'overlay-style.yaml'),
+          path.join(fixtures, 'openapi-style.yaml'),
+          '-o',
+          tmpFile,
+        ]);
+        const expected = fs.readFileSync(path.join(fixtures, 'openapi-style-after.yaml'), 'utf-8');
+        expect(fs.readFileSync(tmpFile, 'utf-8')).to.equal(expected);
+      } finally {
+        if (fs.existsSync(tmpFile)) {
+          fs.unlinkSync(tmpFile);
+        }
+      }
+    });
   });
 
   describe('extends field', function () {
