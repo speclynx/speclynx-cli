@@ -180,8 +180,10 @@ describe('speclynx overlay apply', function () {
         '--overlay',
         path.join(fixtures, 'overlay-style.yaml'),
       ]);
-      expect(stdout).to.include('      summary: |2-\n\n        Added by overlay.\n');
-      expect(stdout).to.include("      description: 'Added by the ''overlay'''\n");
+      // CRLF line breaks of fixtures checked out on Windows are preserved
+      const output = stdout.replace(/\r\n/g, '\n');
+      expect(output).to.include('      summary: |2-\n\n        Added by overlay.\n');
+      expect(output).to.include("      description: 'Added by the ''overlay'''\n");
     });
   });
 
