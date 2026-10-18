@@ -1,0 +1,5 @@
+# check out test fixtures with the same line breaks on every platform
+test/fixtures/** text eol=lf
+# fixtures that deliberately use CRLF line breaks are kept byte for byte
+test/fixtures/**/*-crlf.* -text
+test/fixtures/**/*-crlf-*.* -text

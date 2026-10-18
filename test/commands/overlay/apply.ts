@@ -69,6 +69,29 @@ describe('speclynx overlay apply', function () {
       expect(stdout.trimStart()).to.not.match(/^\{/);
       expect(stdout).to.include('openapi:');
     });
+
+    for (const [lineBreaks, target] of [
+      ['LF', 'openapi-style'],
+      ['CRLF', 'openapi-style-crlf'],
+    ]) {
+      it(`should preserve block and quoted scalars as written with ${lineBreaks} line breaks`, async function () {
+        const tmpFile = path.join(os.tmpdir(), `speclynx-test-${Date.now()}.yaml`);
+        try {
+          await run([
+            path.join(fixtures, 'overlay-style.yaml'),
+            path.join(fixtures, `${target}.yaml`),
+            '-o',
+            tmpFile,
+          ]);
+          const expected = fs.readFileSync(path.join(fixtures, `${target}-after.yaml`), 'utf-8');
+          expect(fs.readFileSync(tmpFile, 'utf-8')).to.equal(expected);
+        } finally {
+          if (fs.existsSync(tmpFile)) {
+            fs.unlinkSync(tmpFile);
+          }
+        }
+      });
+    }
   });
 
   describe('extends field', function () {
@@ -153,6 +176,17 @@ describe('speclynx overlay apply', function () {
       const result = JSON.parse(stdout);
       expect(result.info.description).to.equal('Added by overlay');
       expect(result.info.title).to.equal('Updated Title');
+    });
+
+    it('should preserve scalar styles of values added by additional overlays', async function () {
+      const { stdout } = await run([
+        path.join(fixtures, 'overlay.yaml'),
+        path.join(fixtures, 'openapi-style.yaml'),
+        '--overlay',
+        path.join(fixtures, 'overlay-style.yaml'),
+      ]);
+      expect(stdout).to.include('      summary: |2-\n\n        Added by overlay.\n');
+      expect(stdout).to.include("      description: 'Added by the ''overlay'''\n");
     });
   });
 
