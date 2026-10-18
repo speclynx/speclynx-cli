@@ -172,6 +172,17 @@ describe('speclynx overlay apply', function () {
       expect(result.info.description).to.equal('Added by overlay');
       expect(result.info.title).to.equal('Updated Title');
     });
+
+    it('should preserve scalar styles of values added by additional overlays', async function () {
+      const { stdout } = await run([
+        path.join(fixtures, 'overlay.yaml'),
+        path.join(fixtures, 'openapi-style.yaml'),
+        '--overlay',
+        path.join(fixtures, 'overlay-style.yaml'),
+      ]);
+      expect(stdout).to.include('      summary: |2-\n\n        Added by overlay.\n');
+      expect(stdout).to.include("      description: 'Added by the ''overlay'''\n");
+    });
   });
 
   describe('Overlay 1.2.0 reusable actions', function () {
