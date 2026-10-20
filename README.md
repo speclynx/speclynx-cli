@@ -1,5 +1,12 @@
 <div align="center">
 
+<a href="https://speclynx.com">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/speclynx/.github/main/profile/assets/logos/speclynx-logo-dark.png" />
+    <img width="280" alt="SpecLynx" src="https://raw.githubusercontent.com/speclynx/.github/main/profile/assets/logos/speclynx-logo-light.png" />
+  </picture>
+</a>
+
 # @speclynx/cli
 
 **Validate, overlay, and reshape your API specs from the command line.**
