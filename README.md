@@ -9,7 +9,7 @@
 
 # @speclynx/cli
 
-**Validate, overlay, and reshape your API specs from the command line.**
+**Validate, overlay, and reshape your API specs with one consistent toolchain, from the command line.**
 
 **OpenAPI**, **AsyncAPI**, **Arazzo**, and **Overlay**, in JSON or YAML, through one consistent toolchain.<br/>
 Local-first: no accounts, no telemetry, works offline.

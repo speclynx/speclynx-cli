@@ -9,7 +9,12 @@ const { version } = require('../package.json') as { version: string };
 
 export const program = new Command();
 
-program.name('speclynx').description('SpecLynx CLI for API specification tooling').version(version);
+program
+  .name('speclynx')
+  .description(
+    'Validate, overlay, and reshape your API specs with one consistent toolchain, from the command line.',
+  )
+  .version(version);
 
 program.addCommand(overlay);
 program.addCommand(validate);
