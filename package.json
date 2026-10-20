@@ -1,7 +1,7 @@
 {
   "name": "@speclynx/cli",
   "version": "1.5.1",
-  "description": "Validate, overlay, and reshape your API specs from the command line.",
+  "description": "Validate, overlay, and reshape your API specs with one consistent toolchain, from the command line.",
   "keywords": [
     "cli",
     "api",
