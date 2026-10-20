@@ -1,7 +1,7 @@
 {
   "name": "@speclynx/cli",
   "version": "1.5.1",
-  "description": "Messy API specs? Bring order from the command line — overlay, dereference, bundle, convert, and validate.",
+  "description": "Validate, overlay, and reshape your API specs from the command line.",
   "keywords": [
     "cli",
     "api",
