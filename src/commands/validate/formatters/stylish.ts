@@ -1,7 +1,15 @@
-import chalk from 'chalk';
+import { Chalk } from 'chalk';
 import { DiagnosticSeverity, type Diagnostic } from 'vscode-languageserver-types';
 
 import type { Formatter, FormatterContext } from './types.ts';
+
+// chalk detects TTYs and honors FORCE_COLOR, but ignores NO_COLOR. Follow
+// Node.js's own rules on top of it: a non-empty NO_COLOR or NODE_DISABLE_COLORS
+// disables colors, unless FORCE_COLOR is set (to any value), which wins.
+const colorsDisabled =
+  !('FORCE_COLOR' in process.env) &&
+  Boolean(process.env.NO_COLOR || process.env.NODE_DISABLE_COLORS);
+const chalk = colorsDisabled ? new Chalk({ level: 0 }) : new Chalk();
 
 const severityToString = (severity: DiagnosticSeverity | undefined): string => {
   switch (severity) {
@@ -37,7 +45,8 @@ const pluralize = (word: string, count: number): string =>
 
 // eslint/spectral-style "stylish" output: a file header, one aligned row per
 // diagnostic (`location  severity  code  message`), and a severity-count
-// summary. Colors are applied via chalk, which auto-disables on non-TTY output.
+// summary. Colors are applied via chalk, which auto-disables on non-TTY output
+// and when NO_COLOR or NODE_DISABLE_COLORS is set.
 const stylish: Formatter = (diagnostics, context: FormatterContext): string => {
   if (diagnostics.length === 0) {
     return 'No problems found';

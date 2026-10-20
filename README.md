@@ -1,4 +1,18 @@
+<div align="center">
+
+<a href="https://speclynx.com">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/speclynx/.github/dd089aaa8a190cb8faf49c037976faad365e66c8/profile/assets/logos/speclynx-mark-dark.png" />
+    <img width="120" alt="SpecLynx" src="https://raw.githubusercontent.com/speclynx/.github/dd089aaa8a190cb8faf49c037976faad365e66c8/profile/assets/logos/speclynx-mark-light.png" />
+  </picture>
+</a>
+
 # @speclynx/cli
+
+**Validate, overlay, and reshape your API specs from the command line.**
+
+**OpenAPI**, **AsyncAPI**, **Arazzo**, and **Overlay**, in JSON or YAML, through one consistent toolchain.<br/>
+Local-first: no accounts, no telemetry, works offline.
 
 [![Build Status](https://github.com/speclynx/speclynx-cli/actions/workflows/build.yml/badge.svg)](https://github.com/speclynx/speclynx-cli/actions)
 [![npmversion](https://badge.fury.io/js/@speclynx%2Fcli.svg)](https://www.npmjs.com/package/@speclynx/cli)
@@ -6,293 +20,68 @@
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-3.0-40c463.svg)](https://github.com/speclynx/speclynx-cli/blob/HEAD/CODE_OF_CONDUCT.md)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/speclynx/speclynx-cli/blob/HEAD/LICENSE)
 
-<div align="center">
-    <a href="https://speclynx.com"><img width="636" height="407" alt="image" src="https://github.com/user-attachments/assets/1cfd6c8e-0206-4d53-9a2c-e4d10be84ca0" /></a>
+**[Documentation](https://speclynx.com/cli/)** · **[npm](https://www.npmjs.com/package/@speclynx/cli)** · **[Discussions](https://github.com/orgs/speclynx/discussions)** · **[Issues](https://github.com/speclynx/speclynx-cli/issues)**
+
 </div>
 
-**Overlay**, **dereference**, **bundle**, **convert**, and **validate** your API specs — OpenAPI, AsyncAPI, Arazzo, Overlay, and JSON Schema in one consistent toolchain, from the command line.
+## Get started
 
-> **Note:** Currently the `overlay` and `validate` commands are implemented. More commands are coming soon.
+Validate any spec. Nothing to install, no account:
 
-<div align="center">
-    <b><a href="https://speclynx.com/cli">Documentation</a></b> | <b><a href="https://www.npmjs.com/package/@speclynx/cli">npm</a></b> | <b><a href="https://github.com/speclynx/speclynx-cli/issues">Issues</a></b>
-</div>
+```sh
+npx @speclynx/cli validate openapi.yaml
+npx @speclynx/cli validate asyncapi.yaml
+npx @speclynx/cli validate arazzo.yaml
+npx @speclynx/cli validate overlay.yaml
+```
 
-<br />
+<a href="https://speclynx.com/cli/#validate-command"><img alt="speclynx validate reporting problems with line ranges and rule codes in OpenAPI, AsyncAPI, Arazzo, and Overlay documents" src="https://raw.githubusercontent.com/speclynx/.github/main/profile/assets/validate-demo.svg" /></a>
 
-`@speclynx/cli` is part of the [SpecLynx](https://speclynx.com/) ecosystem, built on top of [ApiDOM](https://github.com/speclynx/apidom) and [ApiDOM Language Service](https://speclynx.com/language-service/).
+Apply or generate overlays:
 
-## Table of contents
+```sh
+npx @speclynx/cli overlay apply add-contact.yaml museum.yaml
+npx @speclynx/cli overlay diff openapi-v1.yaml openapi-v2.yaml
+```
 
-- [Installation](#installation)
-- [Getting help](#getting-help)
-- [Commands](#commands)
-  - [`overlay apply`](#overlay-apply)
-  - [`overlay diff`](#overlay-diff)
-  - [`validate`](#validate)
-- [License](#license)
+<a href="https://speclynx.com/cli/#overlay-apply-command"><img alt="speclynx overlay apply adding a contact to an OpenAPI document, and overlay diff generating an Overlay document from two OpenAPI versions" src="https://raw.githubusercontent.com/speclynx/.github/main/profile/assets/overlay-demo.svg" /></a>
 
-## Installation
+Prefer a global install?
 
 ```sh
 npm install -g @speclynx/cli
-```
-
-Or use directly with `npx`:
-
-```sh
-npx @speclynx/cli overlay apply overlay.json openapi.json
-```
-
-## Getting help
-
-```sh
-speclynx --help                  # list all commands
-speclynx overlay --help          # list overlay subcommands
-speclynx overlay apply --help    # show overlay apply options
-speclynx overlay diff --help     # show overlay diff options
-speclynx validate --help         # show validate options
+speclynx --help
 ```
 
 ## Commands
 
-### `overlay apply`
+| Command | What it does |
+| :------ | :----------- |
+| [`validate`](https://speclynx.com/cli/#validate-command) | Validate and lint OpenAPI 2.0/3.0/3.1, AsyncAPI 2.x, Arazzo 1.x, and Overlay 1.x documents, from a file or a URL. |
+| [<code>overlay&nbsp;apply</code>](https://speclynx.com/cli/#overlay-apply-command) | Apply one or more Overlay 1.0/1.1/1.2 documents to any JSON or YAML document. |
+| [<code>overlay&nbsp;diff</code>](https://speclynx.com/cli/#overlay-diff-command) | Generate an Overlay document that turns one API document into another. |
 
-Apply [Overlay 1.x](https://spec.openapis.org/overlay/v1.2.0.html) documents to API definitions.
+Built for CI: exit codes gate on a severity you choose (`--fail-severity`), and diagnostics are available as JSON (`--format json`).
 
-**Supported Overlay versions:**
+`dereference`, `bundle`, and `convert` are on the [roadmap](https://speclynx.com/cli/#roadmap).
 
-- [Overlay 1.0.0](https://spec.openapis.org/overlay/v1.0.0)
-- [Overlay 1.1.0](https://spec.openapis.org/overlay/v1.1.0)
-- [Overlay 1.2.0](https://spec.openapis.org/overlay/v1.2.0)
+Every option is documented in the [CLI reference](https://speclynx.com/cli/) and in `speclynx <command> --help`.
 
-Overlay 1.2.0 Reusable Action References (`$ref: '#/components/actions/<name>'`) are resolved before the actions are applied. Only references within the same overlay document are supported.
+## Part of SpecLynx
 
-The target can be any JSON or YAML document.
+`@speclynx/cli` is one piece of [SpecLynx](https://speclynx.com/), an open source toolchain for API specs. The same engine powers every tool.
 
-```
-speclynx overlay apply [options] <overlay> [target]
-```
+| Tool | What it does | Type |
+| :--- | :----------- | :--- |
+| [**Editor**](https://speclynx.com/editor/) | Write and validate specs in the browser, nothing to install. | Browser editor |
+| [**OpenAPI Toolkit**](https://speclynx.com/openapi-toolkit/) | Validation, completion, and preview while you author specs. | VS Code extension |
+| [**Language Service**](https://speclynx.com/language-service/) | LSP intelligence for API specs; the validation layer behind `speclynx validate`. | Integration library |
+| [**ApiDOM**](https://speclynx.com/apidom/) | Parse, dereference, and bundle any API spec through one lossless semantic structure. | Core library |
+| [**UseArazzo**](https://usearazzo.com) | Validate, run, and trace Arazzo API workflows. Built on SpecLynx. | Workflow toolkit |
 
-**Arguments:**
+## Get help
 
-| Argument | Description |
-|----------|-------------|
-| `<overlay>` | Path to the overlay document (JSON or YAML) |
-| `[target]` | Path to the target document; if omitted, uses the overlay `extends` field |
-
-**Options:**
-
-| Option | Description |
-|--------|-------------|
-| `--overlay <path>` | Additional overlay document to apply sequentially (repeatable) |
-| `-o, --output <file>` | Write result to file instead of stdout |
-| `-f, --format <format>` | Output format: `json` or `yaml` (auto-detected from target extension) |
-| `--strict` | Fail if any action target matches zero nodes |
-| `--verbose` | Print trace information about overlay application |
-
-#### Examples
-
-Apply an overlay to an OpenAPI document:
-
-```sh
-speclynx overlay apply overlay.json openapi.json
-```
-
-Apply an overlay that uses the `extends` field to reference the target:
-
-```sh
-speclynx overlay apply overlay.yaml
-```
-
-Write the result to a file:
-
-```sh
-speclynx overlay apply overlay.json openapi.json -o result.json
-```
-
-Force YAML output regardless of target extension:
-
-```sh
-speclynx overlay apply overlay.json openapi.json -f yaml
-```
-
-Apply multiple overlays sequentially:
-
-```sh
-speclynx overlay apply first.json openapi.json --overlay second.json --overlay third.json
-```
-
-Use strict mode to catch unmatched targets:
-
-```sh
-speclynx overlay apply overlay.json openapi.json --strict
-```
-
-Show detailed trace of each action:
-
-```sh
-speclynx overlay apply overlay.json openapi.json --verbose
-```
-
-```
-Overlay: overlay.json -> openapi.json
-  [ok] update $.info (1 matches)
-  Overlay was successfully applied
-
-{ ... }
-```
-
----
-
-### `overlay diff`
-
-Generate an [Overlay 1.x](https://spec.openapis.org/overlay/v1.2.0.html) document from the diff of two API documents. The produced overlay, when applied to `<before>`, yields `<after>`. The generated document declares Overlay 1.2.0 by default; use `--overlay-version` to target an older version.
-
-```
-speclynx overlay diff [options] <before> <after>
-```
-
-**Arguments:**
-
-| Argument | Description |
-|----------|-------------|
-| `<before>` | Path to the "before" API document (JSON or YAML) |
-| `<after>` | Path to the "after" API document (JSON or YAML) |
-
-**Options:**
-
-| Option | Description |
-|--------|-------------|
-| `-o, --output <file>` | Write result to file instead of stdout |
-| `-f, --format <format>` | Output format: `json` or `yaml` (auto-detected from `<before>` extension) |
-| `--overlay-version <version>` | Overlay version of the generated document: `1.1.0` or `1.2.0` (default: `1.2.0`). Overlay 1.0.0 is not supported, because the generated actions rely on 1.1.0 semantics (updating primitive values, concatenating arrays) |
-| `--fail-on-empty` | Exit with code 1 if the documents are identical |
-
-#### Examples
-
-Generate an overlay from two OpenAPI documents:
-
-```sh
-speclynx overlay diff openapi-v1.json openapi-v2.json
-```
-
-Write the generated overlay to a file:
-
-```sh
-speclynx overlay diff openapi-v1.yaml openapi-v2.yaml -o migration.yaml
-```
-
-Force JSON output regardless of input format:
-
-```sh
-speclynx overlay diff openapi-v1.yaml openapi-v2.yaml -f json
-```
-
-Generate an Overlay 1.1.0 document (for tools that don't support 1.2.0 yet):
-
-```sh
-speclynx overlay diff openapi-v1.json openapi-v2.json --overlay-version 1.1.0
-```
-
-Fail when the two documents are identical (useful in CI):
-
-```sh
-speclynx overlay diff openapi-v1.json openapi-v2.json --fail-on-empty
-```
-
----
-
-### `validate`
-
-Validate and lint an API definition, powered by the [ApiDOM Language Service](https://speclynx.com/language-service/). The document type and version are auto-detected from its content.
-
-**Supported specifications:**
-
-- OpenAPI 2.0 (Swagger), 3.0.x, 3.1.x
-- AsyncAPI 2.x
-- Arazzo 1.x
-- Overlay 1.x
-
-By default, `validate` runs three kinds of checks:
-
-- **Semantic validation** — checks the document against the *meaning* of its specification, not just its JSON/YAML syntax: required fields are present, values have the correct types, and objects are shaped as the spec requires.
-- **Reference validation** — checks that every local (`#/...`) `$ref` resolves to something that actually exists.
-- **Semantic linting** — applies style and best-practice rules on top of validation (for example, flagging an empty `enum`).
-
-JSON Schema (AJV) validation is an additional opt-in layer, enabled with `--json-schema-validation`. It validates the document against the official JSON Schema for its specification and covers OpenAPI 2/3.0/3.1, AsyncAPI 2.x, Arazzo, and Overlay.
-
-```
-speclynx validate [options] <uri>
-```
-
-**Arguments:**
-
-| Argument | Description |
-|----------|-------------|
-| `<uri>` | Path or URL to the API document (JSON or YAML) — a local file path, a `file://` URL, or an `http(s)://` URL |
-
-**Options:**
-
-| Option | Description |
-|--------|-------------|
-| `-f, --format <format>` | Output format for diagnostics: `stylish` (default) or `json` |
-| `--json` | Shorthand for `--format json` (wins if both are given) |
-| `-o, --output <file>` | Write diagnostics to file instead of stdout |
-| `--json-schema-validation` | Enable JSON Schema (AJV) validation (with friendlier error messages) |
-| `--max-problems <n>` | Maximum number of problems to report |
-| `--fail-severity <severity>` | Minimum diagnostic severity that fails the run: `error` (default), `warning`, `info`, or `hint` |
-
-Diagnostics are written to stdout, or to a file with `-o, --output` (created or overwritten; the exit code is unchanged). The output path must differ from the input file — the command refuses to overwrite the document being validated. The default `stylish` formatter prints a color-coded, human-readable report — a file header, one aligned `location  severity  code  message` row per problem, and a severity-count summary (colors are disabled automatically when the output is not a TTY, when writing to a file with `-o, --output`, or when `NO_COLOR` is set). `--format json` writes the raw diagnostics array for machine consumption. stderr is reserved for hard errors (e.g. a missing input file or an unwritable output path).
-
-**Exit codes** (suitable for CI gating):
-
-| Code | Meaning |
-|------|---------|
-| `0` | No diagnostic at or above `--fail-severity`. |
-| `1` | A diagnostic at or above `--fail-severity` was found (spec is invalid), **or** a hard error occurred (missing input, unresolvable `$ref`, unwritable or input-colliding `-o` path, internal failure). |
-
-Hard errors report on stderr with an `Error:` prefix and write no diagnostics to stdout. So a non-zero exit with **empty stdout** means the run failed; a non-zero exit **with diagnostics** means the document is invalid.
-
-> **Note:** The `code` value of reference-validation diagnostics is not stable across runs, so consumers that snapshot or diff the `--format json` output should not rely on it for reference errors.
-
-#### Examples
-
-Validate an OpenAPI document:
-
-```sh
-speclynx validate openapi.json
-```
-
-Validate a document hosted at a URL:
-
-```sh
-speclynx validate https://example.com/openapi.yaml
-```
-
-Emit machine-readable diagnostics for further processing:
-
-```sh
-speclynx validate openapi.yaml --format json
-```
-
-Write a machine-readable report to a file:
-
-```sh
-speclynx validate openapi.yaml --format json -o report.json
-```
-
-Enable JSON Schema (AJV) validation on top of the default checks:
-
-```sh
-speclynx validate openapi.json --json-schema-validation
-```
-
-Treat lint warnings as failures in CI:
-
-```sh
-speclynx validate openapi.json --fail-severity warning
-```
+Ask in [GitHub Discussions](https://github.com/orgs/speclynx/discussions), or [open an issue](https://github.com/speclynx/speclynx-cli/issues) if something is broken. Contributions are welcome, see [CONTRIBUTING.md](https://github.com/speclynx/speclynx-cli/blob/main/CONTRIBUTING.md).
 
 ## License
 

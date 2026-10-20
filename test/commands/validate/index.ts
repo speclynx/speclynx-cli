@@ -16,9 +16,10 @@ const fixtures = path.resolve(__dirname, '..', '..', 'fixtures', 'commands', 'va
 // openapi.json / openapi.yaml are valid documents shared with the overlay tests.
 const sharedFixtures = path.resolve(__dirname, '..', '..', 'fixtures');
 
-// Force NO_COLOR so the stylish formatter's chalk output is deterministic
-// regardless of the runner's TTY/FORCE_COLOR environment.
-const env = { ...process.env, NO_COLOR: '1' };
+// Force NO_COLOR (and drop FORCE_COLOR, which takes precedence over it) so the
+// stylish formatter's chalk output is deterministic regardless of the runner's
+// TTY/FORCE_COLOR environment.
+const env = { ...process.env, NO_COLOR: '1', FORCE_COLOR: undefined };
 
 const run = (args: string[], cwd?: string): Promise<{ stdout: string; stderr: string }> => {
   return execFileAsync('node', [bin, 'validate', ...args], { env, cwd });
@@ -246,6 +247,59 @@ describe('speclynx validate', function () {
           fs.unlinkSync(tmpFile);
         }
       }
+    });
+  });
+
+  describe('color output', function () {
+    // Preloaded before the CLI so chalk's color detection sees a color-capable
+    // TTY on stdout even though execFile pipes it.
+    const fakeTty = `data:text/javascript,${encodeURIComponent(
+      "import tty from 'node:tty'; tty.isatty = () => true;",
+    )}`;
+    const ESC = String.fromCharCode(27);
+
+    const runInFakeTty = async (extraEnv: Record<string, string>): Promise<string> => {
+      const result = await execFileAsync(
+        'node',
+        ['--import', fakeTty, bin, 'validate', path.join(fixtures, 'openapi-invalid.json')],
+        {
+          env: {
+            ...process.env,
+            TERM: 'xterm-256color',
+            NO_COLOR: undefined,
+            NODE_DISABLE_COLORS: undefined,
+            FORCE_COLOR: undefined,
+            ...extraEnv,
+          },
+        },
+      ).catch((error: unknown) => error as { stdout: string }); // diagnostics fail the run
+      return result.stdout;
+    };
+
+    it('should color the stylish report on a TTY', async function () {
+      expect(await runInFakeTty({})).to.include(ESC);
+    });
+
+    it('should not color the stylish report when NO_COLOR is set', async function () {
+      const stdout = await runInFakeTty({ NO_COLOR: '1' });
+      expect(stdout).to.not.include(ESC);
+      expect(stdout).to.include("should always have a 'title'");
+    });
+
+    it('should not color the stylish report when NODE_DISABLE_COLORS is set', async function () {
+      expect(await runInFakeTty({ NODE_DISABLE_COLORS: '1' })).to.not.include(ESC);
+    });
+
+    it('should ignore an empty NO_COLOR', async function () {
+      expect(await runInFakeTty({ NO_COLOR: '' })).to.include(ESC);
+    });
+
+    it('should let FORCE_COLOR override NO_COLOR, like Node.js', async function () {
+      expect(await runInFakeTty({ NO_COLOR: '1', FORCE_COLOR: '1' })).to.include(ESC);
+    });
+
+    it('should not color the stylish report when FORCE_COLOR=0', async function () {
+      expect(await runInFakeTty({ FORCE_COLOR: '0' })).to.not.include(ESC);
     });
   });
 
