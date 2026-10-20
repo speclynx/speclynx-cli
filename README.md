@@ -2,8 +2,8 @@
 
 <a href="https://speclynx.com">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/speclynx/.github/main/profile/assets/logos/speclynx-logo-dark.png" />
-    <img width="280" alt="SpecLynx" src="https://raw.githubusercontent.com/speclynx/.github/main/profile/assets/logos/speclynx-logo-light.png" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/speclynx/.github/main/profile/assets/logos/speclynx-mark-dark.png" />
+    <img width="120" alt="SpecLynx" src="https://raw.githubusercontent.com/speclynx/.github/main/profile/assets/logos/speclynx-mark-light.png" />
   </picture>
 </a>
 
