@@ -58,8 +58,8 @@ speclynx --help
 | Command | What it does |
 | :------ | :----------- |
 | [`validate`](https://speclynx.com/cli/#validate-command) | Validate and lint OpenAPI 2.0/3.0/3.1, AsyncAPI 2.x, Arazzo 1.x, and Overlay 1.x documents, from a file or a URL. |
-| [`overlay apply`](https://speclynx.com/cli/#overlay-apply-command) | Apply one or more Overlay 1.0/1.1/1.2 documents to any JSON or YAML document. |
-| [`overlay diff`](https://speclynx.com/cli/#overlay-diff-command) | Generate an Overlay document that turns one API document into another. |
+| [<code>overlay&nbsp;apply</code>](https://speclynx.com/cli/#overlay-apply-command) | Apply one or more Overlay 1.0/1.1/1.2 documents to any JSON or YAML document. |
+| [<code>overlay&nbsp;diff</code>](https://speclynx.com/cli/#overlay-diff-command) | Generate an Overlay document that turns one API document into another. |
 
 Built for CI: exit codes gate on a severity you choose (`--fail-severity`), and diagnostics are available as JSON (`--format json`).
 
