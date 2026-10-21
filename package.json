@@ -82,7 +82,7 @@
     "@babel/preset-env": "8.0.7",
     "@babel/preset-typescript": "8.0.7",
     "@commitlint/cli": "=21.2.3",
-    "@commitlint/config-conventional": "=21.2.3",
+    "@commitlint/config-conventional": "=21.2.4",
     "@emnapi/wasi-threads": "2.2.0",
     "@eslint/js": "^10.0.1",
     "@semantic-release/commit-analyzer": "^13.0.1",
