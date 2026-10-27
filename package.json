@@ -65,7 +65,7 @@
   "homepage": "https://github.com/speclynx/speclynx-cli#readme",
   "dependencies": {
     "@babel/runtime-corejs3": "^8.0.6",
-    "@speclynx/api-languageservice": "^2.14.0",
+    "@speclynx/api-languageservice": "^3.0.0",
     "@speclynx/apidom-core": "^6.1.0",
     "@speclynx/apidom-overlay": "^6.1.0",
     "@speclynx/apidom-reference": "^6.1.0",
