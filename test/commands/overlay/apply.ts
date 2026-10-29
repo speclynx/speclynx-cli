@@ -92,6 +92,29 @@ describe('speclynx overlay apply', function () {
         }
       });
     }
+
+    for (const [lineBreaks, overlay] of [
+      ['LF', 'overlay-block-empty-lines'],
+      ['CRLF', 'overlay-block-empty-lines-crlf'],
+    ]) {
+      it(`should not write empty lines between actions after block scalars with ${lineBreaks} line breaks`, async function () {
+        const { stdout } = await run([
+          path.join(fixtures, `${overlay}.yaml`),
+          path.join(sharedFixtures, 'openapi.yaml'),
+        ]);
+        expect(stdout).to.include(
+          '  description: |\n' +
+            '    Clip block\n' +
+            '  summary: |-\n' +
+            '    Strip block\n' +
+            '  x-keep: |+\n' +
+            '    Keep block\n' +
+            '\n' +
+            '\n' +
+            '  x-last: last\n',
+        );
+      });
+    }
   });
 
   describe('extends field', function () {
