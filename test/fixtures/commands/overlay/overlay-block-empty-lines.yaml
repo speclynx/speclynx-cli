@@ -1,0 +1,27 @@
+overlay: 1.0.0
+info:
+  title: Empty lines between actions
+  version: 1.0.0
+actions:
+  - target: $.info
+    update:
+      description: |
+        Clip block
+
+  - target: $.info
+    update:
+      summary: |-
+        Strip block
+
+
+      # a comment after empty lines
+
+  - target: $.info
+    update:
+      x-keep: |+
+        Keep block
+
+
+  - target: $.info
+    update:
+      x-last: last
